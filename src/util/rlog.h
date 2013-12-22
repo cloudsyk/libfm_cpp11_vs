@@ -34,7 +34,7 @@ class RLog {
 		
 		void init() {
 			if (out != NULL) {
-				for (uint i = 0; i < header.size(); i++) {
+				for (unsigned i = 0; i < header.size(); i++) {
 					*out << header[i];
 					if (i < (header.size()-1)) {
 						*out << "\t";
@@ -44,7 +44,7 @@ class RLog {
 				}			
 				out->flush();
 			}
-			for (uint i = 0; i < header.size(); i++) {
+			for (unsigned i = 0; i < header.size(); i++) {
 				value[header[i]] = default_value[header[i]];	
 			}
 		}
@@ -61,7 +61,7 @@ class RLog {
 		
 		void newLine() {
 			if (out != NULL) {
-				for (uint i = 0; i < header.size(); i++) {
+				for (unsigned i = 0; i < header.size(); i++) {
 					*out << value[header[i]];
 					if (i < (header.size()-1)) {
 						*out << "\t";
@@ -71,7 +71,7 @@ class RLog {
 				}
 				out->flush();
 				value.clear();	
-				for (uint i = 0; i < header.size(); i++) {
+				for (unsigned i = 0; i < header.size(); i++) {
 					value[header[i]] = default_value[header[i]];	
 				}
 			}

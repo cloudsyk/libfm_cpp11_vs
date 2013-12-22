@@ -16,6 +16,14 @@
 #include "../../util/rlog.h"
 #include "../../util/util.h"
 
+struct parameter_outside
+{
+    int num_iter;
+    Data* validation;
+    unsigned num_eval_cases;
+    bool do_sample; 
+    bool do_multilevel; 
+};
 
 class fm_learn {
 	protected:
@@ -45,7 +53,8 @@ class fm_learn {
 
 		fm_learn() { log = NULL; task = 0; meta = NULL;} 
 		
-		
+		virtual int set_up(const parameter_outside& para_set) = 0;
+
 		virtual void init() {
 			if (log != NULL) {
 				if (task == TASK_REGRESSION) {

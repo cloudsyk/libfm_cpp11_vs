@@ -18,6 +18,12 @@
 
 class fm_learn_sgd_element: public fm_learn_sgd {
 	public:
+        int set_up(const parameter_outside& para_set) override
+        {
+            num_iter = para_set.num_iter;
+            return 1;
+        }
+
 		virtual void init() {
 			fm_learn_sgd::init();
 

@@ -45,8 +45,8 @@ class fm_learn_mcmc : public fm_learn {
 			throw "not supported for MCMC and ALS";
 		}
 	public:
-		uint num_iter;
-		uint num_eval_cases;
+		unsigned num_iter;
+		unsigned num_eval_cases;
 
 		double alpha_0, gamma_0, beta_0, mu_0;
 		double alpha;
@@ -60,8 +60,8 @@ class fm_learn_mcmc : public fm_learn {
 
 		bool do_sample; // switch between choosing expected values and drawing from distribution 
 		bool do_multilevel; // use the two-level (hierarchical) model (TRUE) or the one-level (FALSE)
-		uint nan_cntr_v, nan_cntr_w, nan_cntr_w0, nan_cntr_alpha, nan_cntr_w_mu, nan_cntr_w_lambda, nan_cntr_v_mu, nan_cntr_v_lambda;
-		uint inf_cntr_v, inf_cntr_w, inf_cntr_w0, inf_cntr_alpha, inf_cntr_w_mu, inf_cntr_w_lambda, inf_cntr_v_mu, inf_cntr_v_lambda;
+		unsigned nan_cntr_v, nan_cntr_w, nan_cntr_w0, nan_cntr_alpha, nan_cntr_w_mu, nan_cntr_w_lambda, nan_cntr_v_mu, nan_cntr_v_lambda;
+		unsigned inf_cntr_v, inf_cntr_w, inf_cntr_w0, inf_cntr_alpha, inf_cntr_w_mu, inf_cntr_w_lambda, inf_cntr_v_mu, inf_cntr_v_lambda;
 
 	protected:
 		DVector<double> cache_for_group_values;
@@ -91,19 +91,19 @@ class fm_learn_mcmc : public fm_learn {
 			DVector<RelationJoin>& relation = main_data(0)->relation;
 
 			// do this using only the transpose copy of the training data:
-			for (uint ds = 0; ds < main_cache.dim; ds++) {
+			for (unsigned ds = 0; ds < main_cache.dim; ds++) {
 				e_q_term* m_cache = main_cache(ds);
 				Data* m_data = main_data(ds);
-				for (uint i = 0; i < m_data->num_cases; i++) {
+				for (unsigned i = 0; i < m_data->num_cases; i++) {
 					m_cache[i].e = 0.0;
 					m_cache[i].q = 0.0;
 				} 	
 			}
 
-			for (uint r = 0; r < relation.dim; r++) {
-				for (uint c = 0; c < relation(r).data->num_cases; c++) {
-					rel_cache(r)[c].y = 0.0;
-					rel_cache(r)[c].q = 0.0;
+			for (unsigned r = 0; r < relation.dim; r++) {
+				for (unsigned c = 0; c < relation(r).data->num_cases; c++) {
+					rel_cache[r][c].y = 0.0;
+					rel_cache[r][c].q = 0.0;
 				}
 			}
 
@@ -116,13 +116,13 @@ class fm_learn_mcmc : public fm_learn {
 
 				// calculate cache[i].q = sum_i v_if x_i (== q_f-term)
 				// Complexity: O(N_z(X^M))
-				for (uint ds = 0; ds < main_cache.dim; ds++) {
+				for (unsigned ds = 0; ds < main_cache.dim; ds++) {
 					e_q_term* m_cache = main_cache(ds);
 					Data* m_data = main_data(ds);
 					m_data->data_t->begin();
-					uint row_index;
+					unsigned row_index;
 					sparse_row<DATA_FLOAT>* feature_data;
-					for (uint i = 0; i < m_data->data_t->getNumRows(); i++) {
+					for (unsigned i = 0; i < m_data->data_t->getNumRows(); i++) {
 						{
 							row_index = m_data->data_t->getRowIndex();
 							feature_data = &(m_data->data_t->getRow()); 
@@ -130,8 +130,8 @@ class fm_learn_mcmc : public fm_learn {
 						}
 						double& v_if = v[row_index];
 					
-						for (uint i_fd = 0; i_fd < feature_data->size; i_fd++) {	
-							uint& train_case_index = feature_data->data[i_fd].id;		
+						for (unsigned i_fd = 0; i_fd < feature_data->size; i_fd++) {	
+							unsigned& train_case_index = feature_data->data[i_fd].id;		
 							FM_FLOAT& x_li = feature_data->data[i_fd].value;	
 							m_cache[train_case_index].q += v_if * x_li;			
 						}
@@ -140,12 +140,12 @@ class fm_learn_mcmc : public fm_learn {
 
 				// calculate block_cache[i].q = sum_i v^B_if x^B_i (== q^B_f-term)
 				// Complexity: O(\sum_{B} N_z(X^B))
-				for (uint r = 0; r < relation.dim; r++) {
-					uint attr_offset = relation(r).data->attr_offset;
+				for (unsigned r = 0; r < relation.dim; r++) {
+					unsigned attr_offset = relation(r).data->attr_offset;
 					relation(r).data->data_t->begin();
-					uint row_index;
+					unsigned row_index;
 					sparse_row<DATA_FLOAT>* feature_data;
-					for (uint i = 0; i < relation(r).data->data_t->getNumRows(); i++) {
+					for (unsigned i = 0; i < relation(r).data->data_t->getNumRows(); i++) {
 						{
 							row_index = relation(r).data->data_t->getRowIndex();
 							feature_data = &(relation(r).data->data_t->getRow()); 
@@ -153,10 +153,10 @@ class fm_learn_mcmc : public fm_learn {
 						}
 						double& v_if = v[row_index + attr_offset];
 					
-						for (uint i_fd = 0; i_fd < feature_data->size; i_fd++) {	
-							uint& train_case_index = feature_data->data[i_fd].id;		
+						for (unsigned i_fd = 0; i_fd < feature_data->size; i_fd++) {	
+							unsigned& train_case_index = feature_data->data[i_fd].id;		
 							FM_FLOAT& x_li = feature_data->data[i_fd].value;	
-							rel_cache(r)[train_case_index].q += v_if * x_li;
+							rel_cache[r][train_case_index].q += v_if * x_li;
 						}
 					}
 					
@@ -164,13 +164,13 @@ class fm_learn_mcmc : public fm_learn {
 
 				// add 0.5*q^2 to e and set q to zero.
 				// O(n*|B|)
-				for (uint ds = 0; ds < main_cache.dim; ds++) {
+				for (unsigned ds = 0; ds < main_cache.dim; ds++) {
 					e_q_term* m_cache = main_cache(ds);
 					Data* m_data = main_data(ds);
-					for (uint c = 0; c < m_data->num_cases; c++) {
+					for (unsigned c = 0; c < m_data->num_cases; c++) {
 						double q_all = m_cache[c].q;
-							for (uint r = 0; r < m_data->relation.dim; r++) {
-								q_all += rel_cache(r)[m_data->relation(r).data_row_to_relation_row(c)].q;
+							for (unsigned r = 0; r < m_data->relation.dim; r++) {
+								q_all += rel_cache[r][m_data->relation(r).data_row_to_relation_row(c)].q;
 							}					
 						m_cache[c].e += 0.5 * q_all*q_all;
 						m_cache[c].q = 0.0;
@@ -180,11 +180,11 @@ class fm_learn_mcmc : public fm_learn {
 
 				// Calculate the "prediction" part of the relation y
 				// O(\sum_B n^B)
-				for (uint r = 0; r < relation.dim; r++) {
+				for (unsigned r = 0; r < relation.dim; r++) {
 					// add 0.5*q^2 to y and set q to zero.
-					for (uint c = 0; c <  relation(r).data->num_cases; c++) {
-						rel_cache(r)[c].y += 0.5 * rel_cache(r)[c].q * rel_cache(r)[c].q;
-						rel_cache(r)[c].q = 0.0;
+					for (unsigned c = 0; c <  relation(r).data->num_cases; c++) {
+						rel_cache[r][c].y += 0.5 * rel_cache[r][c].q * rel_cache[r][c].q;
+						rel_cache[r][c].q = 0.0;
 					}
 				}
 			}
@@ -195,14 +195,14 @@ class fm_learn_mcmc : public fm_learn {
 
 				// sum up the q^S_f terms in the main-q-cache: 0.5*sum_i (v_if x_i)^2 (== q^S_f-term)
 				// Complexity: O(N_z(X^M))
-				for (uint ds = 0; ds < main_cache.dim; ds++) {
+				for (unsigned ds = 0; ds < main_cache.dim; ds++) {
 					e_q_term* m_cache = main_cache(ds);
 					Data* m_data = main_data(ds);
 		
 					m_data->data_t->begin();
-					uint row_index;
+					unsigned row_index;
 					sparse_row<DATA_FLOAT>* feature_data;
-					for (uint i = 0; i < m_data->data_t->getNumRows(); i++) {
+					for (unsigned i = 0; i < m_data->data_t->getNumRows(); i++) {
 						{
 							row_index = m_data->data_t->getRowIndex();
 							feature_data = &(m_data->data_t->getRow()); 
@@ -210,8 +210,8 @@ class fm_learn_mcmc : public fm_learn {
 						}
 						double& v_if = v[row_index];
 			
-						for (uint i_fd = 0; i_fd < feature_data->size; i_fd++) {	
-							uint& train_case_index = feature_data->data[i_fd].id;		
+						for (unsigned i_fd = 0; i_fd < feature_data->size; i_fd++) {	
+							unsigned& train_case_index = feature_data->data[i_fd].id;		
 							FM_FLOAT& x_li = feature_data->data[i_fd].value;	
 							m_cache[train_case_index].q -= 0.5 * v_if * v_if * x_li * x_li;  
 						}
@@ -220,12 +220,12 @@ class fm_learn_mcmc : public fm_learn {
 
 				// sum up the q^B,S_f terms in the block_cache.q: 0.5* sum_i (v^B_if x^B_i)^2 (== q^B,S_f-term)
 				// Complexity: O(\sum_{B} N_z(X^B))
-				for (uint r = 0; r < relation.dim; r++) {
-					uint attr_offset = relation(r).data->attr_offset;
+				for (unsigned r = 0; r < relation.dim; r++) {
+					unsigned attr_offset = relation(r).data->attr_offset;
 					relation(r).data->data_t->begin();
-					uint row_index;
+					unsigned row_index;
 					sparse_row<DATA_FLOAT>* feature_data;
-					for (uint i = 0; i < relation(r).data->data_t->getNumRows(); i++) {
+					for (unsigned i = 0; i < relation(r).data->data_t->getNumRows(); i++) {
 						{
 							row_index = relation(r).data->data_t->getRowIndex();
 							feature_data = &(relation(r).data->data_t->getRow()); 
@@ -233,10 +233,10 @@ class fm_learn_mcmc : public fm_learn {
 						}
 						double& v_if = v[row_index + attr_offset];
 				
-						for (uint i_fd = 0; i_fd < feature_data->size; i_fd++) {	
-							uint& train_case_index = feature_data->data[i_fd].id;		
+						for (unsigned i_fd = 0; i_fd < feature_data->size; i_fd++) {	
+							unsigned& train_case_index = feature_data->data[i_fd].id;		
 							FM_FLOAT& x_li = feature_data->data[i_fd].value;	
-							rel_cache(r)[train_case_index].q -= 0.5 * v_if * v_if * x_li * x_li;
+							rel_cache[r][train_case_index].q -= 0.5 * v_if * v_if * x_li * x_li;
 						}
 					}
 				}
@@ -244,58 +244,58 @@ class fm_learn_mcmc : public fm_learn {
 
 			// (3) add the w's to the q-term	
 			if (fm->k1) {
-				for (uint ds = 0; ds < main_cache.dim; ds++) {
+				for (unsigned ds = 0; ds < main_cache.dim; ds++) {
 					e_q_term* m_cache = main_cache(ds);
 					Data* m_data = main_data(ds);
 					m_data->data_t->begin();
-					uint row_index;
+					unsigned row_index;
 					sparse_row<DATA_FLOAT>* feature_data;
-					for (uint i = 0; i < m_data->data_t->getNumRows(); i++) {
+					for (unsigned i = 0; i < m_data->data_t->getNumRows(); i++) {
 						{
 							row_index = m_data->data_t->getRowIndex();
 							feature_data = &(m_data->data_t->getRow()); 
 							m_data->data_t->next();
 						}
-						double& w_i = fm->w(row_index);						
+						double& w_i = fm->w[row_index];						
 
-						for (uint i_fd = 0; i_fd < feature_data->size; i_fd++) {	
-							uint& train_case_index = feature_data->data[i_fd].id;		
+						for (unsigned i_fd = 0; i_fd < feature_data->size; i_fd++) {	
+							unsigned& train_case_index = feature_data->data[i_fd].id;		
 							FM_FLOAT& x_li = feature_data->data[i_fd].value;	
 							m_cache[train_case_index].q += w_i * x_li;
 						}
 					}
 				}
-				for (uint r = 0; r < relation.dim; r++) {
-					uint attr_offset = relation(r).data->attr_offset;
+				for (unsigned r = 0; r < relation.dim; r++) {
+					unsigned attr_offset = relation(r).data->attr_offset;
 					relation(r).data->data_t->begin();
-					uint row_index;
+					unsigned row_index;
 					sparse_row<DATA_FLOAT>* feature_data;
-					for (uint i = 0; i < relation(r).data->data_t->getNumRows(); i++) {
+					for (unsigned i = 0; i < relation(r).data->data_t->getNumRows(); i++) {
 						{
 							row_index = relation(r).data->data_t->getRowIndex();
 							feature_data = &(relation(r).data->data_t->getRow()); 
 							relation(r).data->data_t->next();
 						}
-						double& w_i = fm->w(row_index + attr_offset);						
+						double& w_i = fm->w[row_index + attr_offset];						
 
-						for (uint i_fd = 0; i_fd < feature_data->size; i_fd++) {	
-							uint& train_case_index = feature_data->data[i_fd].id;		
+						for (unsigned i_fd = 0; i_fd < feature_data->size; i_fd++) {	
+							unsigned& train_case_index = feature_data->data[i_fd].id;		
 							FM_FLOAT& x_li = feature_data->data[i_fd].value;	
-							rel_cache(r)[train_case_index].q += w_i * x_li; 
+							rel_cache[r][train_case_index].q += w_i * x_li; 
 						}
 					}
 				}
 
 			}	
 			// (3) merge both for getting the prediction: w0+e(c)+q(c)
-			for (uint ds = 0; ds < main_cache.dim; ds++) {
+			for (unsigned ds = 0; ds < main_cache.dim; ds++) {
 				e_q_term* m_cache = main_cache(ds);
 				Data* m_data = main_data(ds);
 			
-				for (uint c = 0; c < m_data->num_cases; c++) {
+				for (unsigned c = 0; c < m_data->num_cases; c++) {
 					double q_all = m_cache[c].q;
-					for (uint r = 0; r < m_data->relation.dim; r++) {
-						q_all += rel_cache(r)[m_data->relation(r).data_row_to_relation_row(c)].q;
+					for (unsigned r = 0; r < m_data->relation.dim; r++) {
+						q_all += rel_cache[r][m_data->relation(r).data_row_to_relation_row(c)].q;
 					}
 					m_cache[c].e = m_cache[c].e + q_all;
 					if (fm->k0) {
@@ -306,11 +306,11 @@ class fm_learn_mcmc : public fm_learn {
 			}
 
 			// The "prediction" in each block is calculated
-			for (uint r = 0; r < relation.dim; r++) {
+			for (unsigned r = 0; r < relation.dim; r++) {
 				// y_i = y_i + q_i = [1/2 sum_f (q^B_if)^2] + [sum w^B_i x^B_i -1/2 sum_f (sum_i v^B_if^2 x^B_i^2)]
-				for (uint c = 0; c <  relation(r).data->num_cases; c++) {
-					rel_cache(r)[c].y = rel_cache(r)[c].y + rel_cache(r)[c].q;
-					rel_cache(r)[c].q = 0.0;
+				for (unsigned c = 0; c <  relation(r).data->num_cases; c++) {
+					rel_cache[r][c].y = rel_cache[r][c].y + rel_cache[r][c].q;
+					rel_cache[r][c].q = 0.0;
 				}
 			}
 
@@ -325,22 +325,22 @@ class fm_learn_mcmc : public fm_learn {
 			assert(data.num_cases == out.dim);
 			if (do_sample) {
 				assert(data.num_cases == pred_sum_all.dim);
-				for (uint i = 0; i < out.dim; i++) {
-					out(i) = pred_sum_all(i) / num_iter;
+				for (unsigned i = 0; i < out.dim; i++) {
+					out[i] = pred_sum_all(i) / num_iter;
 				} 
 			} else {
 				assert(data.num_cases == pred_this.dim);
-				for (uint i = 0; i < out.dim; i++) {
-					out(i) = pred_this(i);
+				for (unsigned i = 0; i < out.dim; i++) {
+					out[i] = pred_this(i);
 				} 
 			}
-			for (uint i = 0; i < out.dim; i++) {
+			for (unsigned i = 0; i < out.dim; i++) {
 				if (task == TASK_REGRESSION ) {
-					out(i) = std::min(max_target, out(i));
-					out(i) = std::max(min_target, out(i));
+					out[i] = std::min(max_target, out[i]);
+					out[i] = std::max(min_target, out[i]);
 				} else if (task == TASK_CLASSIFICATION) {
-					out(i) = std::min(1.0, out(i));
-					out(i) = std::max(0.0, out(i));
+					out[i] = std::min(1.0, out[i]);
+					out[i] = std::max(0.0, out[i]);
 				} else {
 					throw "task not supported";
 				}
@@ -350,7 +350,7 @@ class fm_learn_mcmc : public fm_learn {
 
 
 
-		void add_main_q(Data& train, uint f) {
+		void add_main_q(Data& train, unsigned f) {
 			// add the q(f)-terms to the main relation q-cache (using only the transpose data)
 			
 			double* v = fm->v.value[f];
@@ -358,17 +358,17 @@ class fm_learn_mcmc : public fm_learn {
 
 			{
 				train.data_t->begin();
-				uint row_index;
+				unsigned row_index;
 				sparse_row<DATA_FLOAT>* feature_data;
-				for (uint i = 0; i < train.data_t->getNumRows(); i++) {
+				for (unsigned i = 0; i < train.data_t->getNumRows(); i++) {
 					{
 						row_index = train.data_t->getRowIndex();
 						feature_data = &(train.data_t->getRow()); 
 						train.data_t->next();
 					}
 					double& v_if = v[row_index];
-					for (uint i_fd = 0; i_fd < feature_data->size; i_fd++) {	
-						uint& train_case_index = feature_data->data[i_fd].id;		
+					for (unsigned i_fd = 0; i_fd < feature_data->size; i_fd++) {	
+						unsigned& train_case_index = feature_data->data[i_fd].id;		
 						FM_FLOAT& x_li = feature_data->data[i_fd].value;	
 						cache[train_case_index].q += v_if * x_li;
 					}
@@ -389,71 +389,71 @@ class fm_learn_mcmc : public fm_learn {
 				draw_w0(fm->w0, fm->reg0, train);
 			}
 			if (fm->k1) {
-				uint count_how_many_variables_are_drawn = 0; // to make sure that non-existing ones in the train set are not missed...
+				unsigned count_how_many_variables_are_drawn = 0; // to make sure that non-existing ones in the train set are not missed...
 			
 				draw_w_lambda(fm->w.value);
 				draw_w_mu(fm->w.value);
 				if (log != NULL) {
-					for (uint g = 0; g < meta->num_attr_groups; g++) {
-						ss.str(""); ss << "wmu[" << g << "]"; log->log(ss.str(), w_mu(g));
-						ss.str(""); ss << "wlambda[" << g << "]"; log->log(ss.str(), w_lambda(g));
+					for (unsigned g = 0; g < meta->num_attr_groups; g++) {
+						ss.str(""); ss << "wmu[" << g << "]"; log->log(ss.str(), w_mu[g]);
+						ss.str(""); ss << "wlambda[" << g << "]"; log->log(ss.str(), w_lambda[g]);
 					}
 				}
 
 				// draw the w from their posterior
 				train.data_t->begin();
-				uint row_index;
+				unsigned row_index;
 				sparse_row<DATA_FLOAT>* feature_data;
-				for (uint i = 0; i < train.data_t->getNumRows(); i++) {	
+				for (unsigned i = 0; i < train.data_t->getNumRows(); i++) {	
 					{
 						row_index = train.data_t->getRowIndex();
 						feature_data = &(train.data_t->getRow()); 
 						train.data_t->next();
 						count_how_many_variables_are_drawn++;
 					}
-					uint g = meta->attr_group(row_index);
-					draw_w(fm->w(row_index), w_mu(g), w_lambda(g), *feature_data);
+					unsigned g = meta->attr_group(row_index);
+					draw_w(fm->w[row_index], w_mu[g], w_lambda[g], *feature_data);
 				}
 				// draw w's of the main table for which there is no observation in the training data
-				uint draw_to = fm->num_attribute; 
+				unsigned draw_to = fm->num_attribute; 
 				if (train.relation.dim > 0) { draw_to = train.relation(0).data->attr_offset; } // draw up to the first relation table
-				for (uint i = train.data_t->getNumRows(); i < draw_to; i++) {
+				for (unsigned i = train.data_t->getNumRows(); i < draw_to; i++) {
 					row_index = i;
 					feature_data = &(empty_data_row);
-					uint g = meta->attr_group(row_index);
-					draw_w(fm->w(row_index), w_mu(g), w_lambda(g), *feature_data);
+					unsigned g = meta->attr_group(row_index);
+					draw_w(fm->w[row_index], w_mu[g], w_lambda[g], *feature_data);
 					count_how_many_variables_are_drawn++;
 				}
 				// foreach relation do: draw w
-				for (uint r = 0; r < train.relation.dim; r++) {
+				for (unsigned r = 0; r < train.relation.dim; r++) {
 					RelationJoin& join = train.relation(r);
-					relation_cache* r_cache = rel_cache(r);
+					relation_cache* r_cache = rel_cache[r];
 					// init the e-cache for the blocks
-					for (uint c = 0; c < join.data->num_cases; c++) {
+					for (unsigned c = 0; c < join.data->num_cases; c++) {
 						r_cache[c].we = 0;
 					}
-					for (uint c = 0; c < train.num_cases; c++) {
+					for (unsigned c = 0; c < train.num_cases; c++) {
 						r_cache[join.data_row_to_relation_row(c)].we += cache[c].e;
 						cache[c].e -= r_cache[join.data_row_to_relation_row(c)].y; // let main.e be out of sync
 					}
 					// draw the w's:
 					join.data->data_t->begin();
-					uint row_index;
+					unsigned row_index;
 					sparse_row<DATA_FLOAT>* feature_data;
-					for (uint i = 0; i < join.data->data_t->getNumRows(); i++) {
+					for (unsigned i = 0; i < join.data->data_t->getNumRows(); i++) {
 						{
 							row_index = join.data->data_t->getRowIndex();
 							feature_data = &(join.data->data_t->getRow()); 
 							join.data->data_t->next();							
 							count_how_many_variables_are_drawn++;
 						}
-						uint g = meta->attr_group(row_index+join.data->attr_offset);
-						draw_w_rel(fm->w(row_index+join.data->attr_offset), w_mu(g), w_lambda(g), *feature_data, r_cache);
+						unsigned g = meta->attr_group(row_index+join.data->attr_offset);
+						draw_w_rel(fm->w[row_index+join.data->attr_offset], w_mu[g], w_lambda[g], *feature_data, r_cache);
 					}
 					
 
 					// update the cache.e-Term!
-					for (uint c = 0; c < train.num_cases; c++) {
+					for (unsigned c = 0; c < train.num_cases; c++) {
 						cache[c].e += r_cache[join.data_row_to_relation_row(c)].y; // sync main.e again
 					}
 					
@@ -467,7 +467,7 @@ class fm_learn_mcmc : public fm_learn {
 				draw_v_lambda();
 				draw_v_mu();
 				if (log != NULL) {
-					for (uint g = 0; g < meta->num_attr_groups; g++) {
+					for (unsigned g = 0; g < meta->num_attr_groups; g++) {
 						for (int f = 0; f < fm->num_factor; f++) {
 							ss.str(""); ss << "vmu[" << g << "," << f << "]"; log->log(ss.str(), v_mu(g,f));
 							ss.str(""); ss << "vlambda[" << g << "," << f << "]"; log->log(ss.str(), v_lambda(g,f));
@@ -477,9 +477,9 @@ class fm_learn_mcmc : public fm_learn {
 			}
 
 			for (int f = 0; f < fm->num_factor; f++) {
-				uint count_how_many_variables_are_drawn = 0; // to make sure that non-existing ones in the train set are not missed...
+				unsigned count_how_many_variables_are_drawn = 0; // to make sure that non-existing ones in the train set are not missed...
 
-				for (uint c = 0; c < train.num_cases; c++) {
+				for (unsigned c = 0; c < train.num_cases; c++) {
 					cache[c].q = 0.0;
 				}
 
@@ -487,17 +487,17 @@ class fm_learn_mcmc : public fm_learn {
 			
 				double* v = fm->v.value[f];
 				
-				for (uint r = 0; r < train.relation.dim; r++) {
+				for (unsigned r = 0; r < train.relation.dim; r++) {
 					RelationJoin& join = train.relation(r);
-					relation_cache* r_cache = rel_cache(r);
-					for (uint c = 0; c < join.data->num_cases; c++) {
+					relation_cache* r_cache = rel_cache[r];
+					for (unsigned c = 0; c < join.data->num_cases; c++) {
 						r_cache[c].q = 0.0;
 					}
-					uint attr_offset = join.data->attr_offset;
+					unsigned attr_offset = join.data->attr_offset;
 					join.data->data_t->begin();
-					uint row_index;
+					unsigned row_index;
 					sparse_row<DATA_FLOAT>* feature_data;
-					for (uint i = 0; i < join.data->data_t->getNumRows(); i++) {
+					for (unsigned i = 0; i < join.data->data_t->getNumRows(); i++) {
 						{
 							row_index = join.data->data_t->getRowIndex();
 							feature_data = &(join.data->data_t->getRow()); 
@@ -505,8 +505,8 @@ class fm_learn_mcmc : public fm_learn {
 						}
 						double& v_if = v[row_index + attr_offset];
 				
-						for (uint i_fd = 0; i_fd < feature_data->size; i_fd++) {	
-							uint& train_case_index = feature_data->data[i_fd].id;		
+						for (unsigned i_fd = 0; i_fd < feature_data->size; i_fd++) {	
+							unsigned& train_case_index = feature_data->data[i_fd].id;		
 							FM_FLOAT& x_li = feature_data->data[i_fd].value;	
 							r_cache[train_case_index].q += v_if * x_li;			
 						}
@@ -514,50 +514,50 @@ class fm_learn_mcmc : public fm_learn {
 				}
 
 				// sum q^M over its relations:
-				for (uint c = 0; c < train.num_cases; c++) {
-					for (uint r = 0; r < train.relation.dim; r++) {
-						cache[c].q += rel_cache(r)[train.relation(r).data_row_to_relation_row(c)].q; // if do innerblock, then it contains q^M + sum q^B otherwise just sum q^B
+				for (unsigned c = 0; c < train.num_cases; c++) {
+					for (unsigned r = 0; r < train.relation.dim; r++) {
+						cache[c].q += rel_cache[r][train.relation(r).data_row_to_relation_row(c)].q; // if do innerblock, then it contains q^M + sum q^B otherwise just sum q^B
 					}
 				} 
 
 				// draw the thetas from their posterior
 				train.data_t->begin();
-				uint row_index;
+				unsigned row_index;
 				sparse_row<DATA_FLOAT>* feature_data;
-				for (uint i = 0; i < train.data_t->getNumRows(); i++) {
+				for (unsigned i = 0; i < train.data_t->getNumRows(); i++) {
 					{
 						row_index = train.data_t->getRowIndex();
 						feature_data = &(train.data_t->getRow()); 
 						train.data_t->next();
 						count_how_many_variables_are_drawn++;
 					}
-					uint g = meta->attr_group(row_index);
+					unsigned g = meta->attr_group(row_index);
 					draw_v(v[row_index], v_mu(g,f), v_lambda(g,f), *feature_data);
 				}		
 				// draw v's of the main table for which there is no observation in the training data
-				uint draw_to = fm->num_attribute; 
+				unsigned draw_to = fm->num_attribute; 
 				if (train.relation.dim > 0) { draw_to = train.relation(0).data->attr_offset; } // draw up to the first relation table
-				for (uint i = train.data_t->getNumRows(); i < draw_to; i++) {
+				for (unsigned i = train.data_t->getNumRows(); i < draw_to; i++) {
 					row_index = i;
 					feature_data = &(empty_data_row);
-					uint g = meta->attr_group(row_index);
+					unsigned g = meta->attr_group(row_index);
 					draw_v(v[row_index], v_mu(g,f), v_lambda(g,f), *feature_data);
 					count_how_many_variables_are_drawn++;
 				}
 
 				// foreach relation do: draw v	
-				for (uint r = 0; r < train.relation.dim; r++) {
+				for (unsigned r = 0; r < train.relation.dim; r++) {
 					RelationJoin& join = train.relation(r);
-					relation_cache* r_cache = rel_cache(r);
+					relation_cache* r_cache = rel_cache[r];
 					// init for the block: c, c_sqr, e, eq
 					// unsync main: q and e
-					for (uint c = 0; c < join.data->num_cases; c++) {
+					for (unsigned c = 0; c < join.data->num_cases; c++) {
 						r_cache[c].we = 0.0;
 						r_cache[c].weq = 0.0;
 						r_cache[c].wc = 0.0;
 						r_cache[c].wc_sqr = 0.0;
 					}					
-					for (uint c = 0; c < train.num_cases; c++) {
+					for (unsigned c = 0; c < train.num_cases; c++) {
 						cache[c].q -= r_cache[join.data_row_to_relation_row(c)].q; // let main.q be out of sync
 						r_cache[join.data_row_to_relation_row(c)].we += cache[c].e;
 						r_cache[join.data_row_to_relation_row(c)].weq += (cache[c].e * cache[c].q);
@@ -568,21 +568,21 @@ class fm_learn_mcmc : public fm_learn {
 				
 					// draw the v's:
 					join.data->data_t->begin();
-					uint row_index;
+					unsigned row_index;
 					sparse_row<DATA_FLOAT>* feature_data;
-					for (uint i = 0; i < join.data->data_t->getNumRows(); i++) {
+					for (unsigned i = 0; i < join.data->data_t->getNumRows(); i++) {
 						{
 							row_index = join.data->data_t->getRowIndex();
 							feature_data = &(join.data->data_t->getRow()); 
 							join.data->data_t->next();
 							count_how_many_variables_are_drawn++;
 						}
-						uint g = meta->attr_group(row_index+join.data->attr_offset);
+						unsigned g = meta->attr_group(row_index+join.data->attr_offset);
 						draw_v_rel(v[row_index+join.data->attr_offset], v_mu(g,f), v_lambda(g,f), *feature_data, r_cache);
 					}					
 
 					// update the cache.e and cache.q terms
-					for (uint c = 0; c < train.num_cases; c++) {
+					for (unsigned c = 0; c < train.num_cases; c++) {
 						cache[c].e += (r_cache[join.data_row_to_relation_row(c)].y + cache[c].q*r_cache[join.data_row_to_relation_row(c)].q); // sync e-term
 						cache[c].q += r_cache[join.data_row_to_relation_row(c)].q; // sync q-term
 					}		
@@ -601,7 +601,7 @@ class fm_learn_mcmc : public fm_learn {
 			// \sum h^2 = \sum 1
 			double w0_sigma_sqr;
 			double w0_mean = 0;
-			for (uint i = 0; i < train.num_cases; i++) {
+			for (unsigned i = 0; i < train.num_cases; i++) {
 				w0_mean += cache[i].e - w0;
 			}
 			w0_sigma_sqr = (double) 1.0 / (reg + alpha * train.num_cases);
@@ -631,7 +631,7 @@ class fm_learn_mcmc : public fm_learn {
 				return;
 			}
 			// update error
-			for (uint i = 0; i < train.num_cases; i++) {
+			for (unsigned i = 0; i < train.num_cases; i++) {
 				cache[i].e -= (w0_old - w0);
 			}	
 		}
@@ -640,8 +640,8 @@ class fm_learn_mcmc : public fm_learn {
 		void draw_w(double& w, double& w_mu, double& w_lambda, sparse_row<DATA_FLOAT>& feature_data) {
 			double w_sigma_sqr = 0;
 			double w_mean = 0;
-			for (uint i_fd = 0; i_fd < feature_data.size; i_fd++) {	
-				uint& train_case_index = feature_data.data[i_fd].id;		
+			for (unsigned i_fd = 0; i_fd < feature_data.size; i_fd++) {	
+				unsigned& train_case_index = feature_data.data[i_fd].id;		
 				FM_FLOAT x_li = feature_data.data[i_fd].value;	
 				w_mean += x_li * (cache[train_case_index].e - w * x_li);
 				w_sigma_sqr += x_li * x_li;
@@ -678,8 +678,8 @@ class fm_learn_mcmc : public fm_learn {
 				return;
 			}
 			// update error:
-			for (uint i_fd = 0; i_fd < feature_data.size; i_fd++) {	
-				uint& train_case_index = feature_data.data[i_fd].id;	
+			for (unsigned i_fd = 0; i_fd < feature_data.size; i_fd++) {	
+				unsigned& train_case_index = feature_data.data[i_fd].id;	
 				FM_FLOAT& x_li = feature_data.data[i_fd].value;	
 				double h = x_li;
 				cache[train_case_index].e -= h * (w_old - w);	
@@ -692,9 +692,9 @@ class fm_learn_mcmc : public fm_learn {
 			double w_mean = 0;
 			// w_sigma_sqr = \sum h^2
 			// w_mean = \sum h*e
-			uint num_all = 0;
-			for (uint i_fd = 0; i_fd < feature_data.size; i_fd++) {	
-				uint& train_case_index = feature_data.data[i_fd].id;		
+			unsigned num_all = 0;
+			for (unsigned i_fd = 0; i_fd < feature_data.size; i_fd++) {	
+				unsigned& train_case_index = feature_data.data[i_fd].id;		
 				FM_FLOAT x_li = feature_data.data[i_fd].value;	
 				//w_mean += x_li * (cache[train_case_index].e - w * x_li);
 				w_mean += x_li * r_cache[train_case_index].we;
@@ -736,8 +736,8 @@ class fm_learn_mcmc : public fm_learn {
 				return;
 			}
 			// update error:
-			for (uint i_fd = 0; i_fd < feature_data.size; i_fd++) {	
-				uint& train_case_index = feature_data.data[i_fd].id;	
+			for (unsigned i_fd = 0; i_fd < feature_data.size; i_fd++) {	
+				unsigned& train_case_index = feature_data.data[i_fd].id;	
 				FM_FLOAT& x_li = feature_data.data[i_fd].value;	
 				double h = x_li;
 				r_cache[train_case_index].we -= h * (w_old - w) * r_cache[train_case_index].wnum;
@@ -751,8 +751,8 @@ class fm_learn_mcmc : public fm_learn {
 			double v_mean = 0;
 			// v_sigma_sqr = \sum h^2 (always)
 			// v_mean = \sum h*e (for non_internlock_interactions)
-			for (uint i_fd = 0; i_fd < feature_data.size; i_fd++) {	
-				uint& train_case_index = feature_data.data[i_fd].id;		
+			for (unsigned i_fd = 0; i_fd < feature_data.size; i_fd++) {	
+				unsigned& train_case_index = feature_data.data[i_fd].id;		
 				FM_FLOAT& x_li = feature_data.data[i_fd].value;
 				e_q_term* cache_li = &(cache[train_case_index]);
 				double h = x_li * ( cache_li->q - x_li * v);
@@ -793,8 +793,8 @@ class fm_learn_mcmc : public fm_learn {
 			}
 
 			// update error and q:
-			for (uint i_fd = 0; i_fd < feature_data.size; i_fd++) {	
-				uint& train_case_index = feature_data.data[i_fd].id;		
+			for (unsigned i_fd = 0; i_fd < feature_data.size; i_fd++) {	
+				unsigned& train_case_index = feature_data.data[i_fd].id;		
 				FM_FLOAT& x_li = feature_data.data[i_fd].value;	
 				e_q_term* cache_li = &(cache[train_case_index]);
 				double h = x_li * ( cache_li->q - x_li * v_old);
@@ -810,9 +810,9 @@ class fm_learn_mcmc : public fm_learn {
 			double v_mean = 0;
 			// v_sigma_sqr = \sum h^2
 			// v_mean = \sum h*e
-			uint num_all = 0;
-			for (uint i_fd = 0; i_fd < feature_data.size; i_fd++) {	
-				uint& train_case_index = feature_data.data[i_fd].id;		
+			unsigned num_all = 0;
+			for (unsigned i_fd = 0; i_fd < feature_data.size; i_fd++) {	
+				unsigned& train_case_index = feature_data.data[i_fd].id;		
 				FM_FLOAT x_li = feature_data.data[i_fd].value;	
 				relation_cache* cache_li = &(r_cache[train_case_index]);
 				double h = x_li * ( cache_li->q - x_li * v);
@@ -855,8 +855,8 @@ class fm_learn_mcmc : public fm_learn {
 			}
 
 			// update error and q:
-			for (uint i_fd = 0; i_fd < feature_data.size; i_fd++) {	
-				uint& train_case_index = feature_data.data[i_fd].id;		
+			for (unsigned i_fd = 0; i_fd < feature_data.size; i_fd++) {	
+				unsigned& train_case_index = feature_data.data[i_fd].id;		
 				FM_FLOAT x_li = feature_data.data[i_fd].value;	
 				relation_cache* cache_li = &(r_cache[train_case_index]);
 				double h = x_li * ( cache_li->q - x_li * v_old);
@@ -867,14 +867,14 @@ class fm_learn_mcmc : public fm_learn {
 			}
 		}
 
-		void draw_alpha(double& alpha, uint num_train_total) {
+		void draw_alpha(double& alpha, unsigned num_train_total) {
 			if (! do_multilevel) {
 				alpha = alpha_0;
 				return;
 			}
 			double alpha_n = alpha_0 + num_train_total;
 			double gamma_n = gamma_0;
-			for (uint i = 0; i < num_train_total; i++) {
+			for (unsigned i = 0; i < num_train_total; i++) {
 				gamma_n += cache[i].e*cache[i].e;
 			}
 			double alpha_old = alpha;
@@ -904,33 +904,33 @@ class fm_learn_mcmc : public fm_learn {
 			}
 			DVector<double>& w_mu_mean = cache_for_group_values;
 			w_mu_mean.init(0.0);
-			for (uint i = 0; i < fm->num_attribute; i++) {
-				uint g = meta->attr_group(i);
-				w_mu_mean(g) += w[i];
+			for (unsigned i = 0; i < fm->num_attribute; i++) {
+				unsigned g = meta->attr_group(i);
+				w_mu_mean[g] += w[i];
 			}
-			for (uint g = 0; g < meta->num_attr_groups; g++) {
-				w_mu_mean(g) = (w_mu_mean(g)+beta_0 * mu_0) / (meta->num_attr_per_group(g) + beta_0);
-				double w_mu_sigma_sqr = (double) 1.0 / ((meta->num_attr_per_group(g) + beta_0) * w_lambda(g));
-				double w_mu_old = w_mu(g);
+			for (unsigned g = 0; g < meta->num_attr_groups; g++) {
+				w_mu_mean[g] = (w_mu_mean(g)+beta_0 * mu_0) / (meta->num_attr_per_group(g) + beta_0);
+				double w_mu_sigma_sqr = (double) 1.0 / ((meta->num_attr_per_group(g) + beta_0) * w_lambda[g]);
+				double w_mu_old = w_mu[g];
 				if (do_sample) {
-					w_mu(g) = ran_gaussian(w_mu_mean(g), std::sqrt(w_mu_sigma_sqr));
+					w_mu[g] = ran_gaussian(w_mu_mean(g), std::sqrt(w_mu_sigma_sqr));
 				} else {
-					w_mu(g) = w_mu_mean(g);
+					w_mu[g] = w_mu_mean(g);
 				}			
 
 				// check for out of bounds values
-				if (std::isnan(w_mu(g))) {
+				if (std::isnan(w_mu[g])) {
 					nan_cntr_w_mu++;
-					w_mu(g) = w_mu_old;
+					w_mu[g] = w_mu_old;
 					assert(! std::isnan(w_mu_old));
-					assert(! std::isnan(w_mu(g)));
+					assert(! std::isnan(w_mu[g]));
 					return;
 				}
-				if (std::isinf(w_mu(g))) {
+				if (std::isinf(w_mu[g])) {
 					inf_cntr_w_mu++;
-					w_mu(g) = w_mu_old;
+					w_mu[g] = w_mu_old;
 					assert(! std::isinf(w_mu_old));
-					assert(! std::isinf(w_mu(g)));
+					assert(! std::isinf(w_mu[g]));
 					return;
 				}
 			}
@@ -942,34 +942,34 @@ class fm_learn_mcmc : public fm_learn {
 			}
 				
 			DVector<double>& w_lambda_gamma = cache_for_group_values;
-			for (uint g = 0; g < meta->num_attr_groups; g++) {
-				w_lambda_gamma(g) = beta_0 * (w_mu(g) - mu_0) * (w_mu(g) - mu_0) + gamma_0; 
+			for (unsigned g = 0; g < meta->num_attr_groups; g++) {
+				w_lambda_gamma[g] = beta_0 * (w_mu[g] - mu_0) * (w_mu[g] - mu_0) + gamma_0; 
 			}
-			for (uint i = 0; i < fm->num_attribute; i++) {
-				uint g = meta->attr_group(i);
-				w_lambda_gamma(g) += (w[i] - w_mu(g)) * (w[i] - w_mu(g));
+			for (unsigned i = 0; i < fm->num_attribute; i++) {
+				unsigned g = meta->attr_group(i);
+				w_lambda_gamma[g] += (w[i] - w_mu[g]) * (w[i] - w_mu[g]);
 			}
-			for (uint g = 0; g < meta->num_attr_groups; g++) {
+			for (unsigned g = 0; g < meta->num_attr_groups; g++) {
 				double w_lambda_alpha = alpha_0 + meta->num_attr_per_group(g) + 1;
-				double w_lambda_old = w_lambda(g);
+				double w_lambda_old = w_lambda[g];
 				if (do_sample) {
-					w_lambda(g) = ran_gamma(w_lambda_alpha / 2.0, w_lambda_gamma(g) / 2.0);
+					w_lambda[g] = ran_gamma(w_lambda_alpha / 2.0, w_lambda_gamma(g) / 2.0);
 				} else {
-					w_lambda(g) = w_lambda_alpha/w_lambda_gamma(g);
+					w_lambda[g] = w_lambda_alpha/w_lambda_gamma(g);
 				}
 				// check for out of bounds values
-				if (std::isnan(w_lambda(g))) {
+				if (std::isnan(w_lambda[g])) {
 					nan_cntr_w_lambda++;
-					w_lambda(g) = w_lambda_old;
+					w_lambda[g] = w_lambda_old;
 					assert(! std::isnan(w_lambda_old));
-					assert(! std::isnan(w_lambda(g)));
+					assert(! std::isnan(w_lambda[g]));
 					return;
 				}
-				if (std::isinf(w_lambda(g))) {
+				if (std::isinf(w_lambda[g])) {
 					inf_cntr_w_lambda++;
-					w_lambda(g) = w_lambda_old;
+					w_lambda[g] = w_lambda_old;
 					assert(! std::isinf(w_lambda_old));
-					assert(! std::isinf(w_lambda(g)));
+					assert(! std::isinf(w_lambda[g]));
 					return;
 				}
 			}
@@ -986,18 +986,18 @@ class fm_learn_mcmc : public fm_learn {
 			DVector<double>& v_mu_mean = cache_for_group_values;
 			for (int f = 0; f < fm->num_factor; f++) {
 				v_mu_mean.init(0.0);
-				for (uint i = 0; i < fm->num_attribute; i++) {
-					uint g = meta->attr_group(i);
-					v_mu_mean(g) += fm->v(f,i);
+				for (unsigned i = 0; i < fm->num_attribute; i++) {
+					unsigned g = meta->attr_group(i);
+					v_mu_mean[g] += fm->v(f,i);
 				}
-				for (uint g = 0; g < meta->num_attr_groups; g++) {
-					v_mu_mean(g) = (v_mu_mean(g) + beta_0 * mu_0) / (meta->num_attr_per_group(g) + beta_0);
+				for (unsigned g = 0; g < meta->num_attr_groups; g++) {
+					v_mu_mean[g] = (v_mu_mean[g] + beta_0 * mu_0) / (meta->num_attr_per_group(g) + beta_0);
 					double v_mu_sigma_sqr = (double) 1.0 / ((meta->num_attr_per_group(g) + beta_0) * v_lambda(g,f));
 					double v_mu_old = v_mu(g,f);
 					if (do_sample) {
-						v_mu(g,f) = ran_gaussian(v_mu_mean(g), std::sqrt(v_mu_sigma_sqr));
+						v_mu(g,f) = ran_gaussian(v_mu_mean[g], std::sqrt(v_mu_sigma_sqr));
 					} else {
-						v_mu(g,f) = v_mu_mean(g);
+						v_mu(g,f) = v_mu_mean[g];
 					}
 					if (std::isnan(v_mu(g,f))) {
 						nan_cntr_v_mu++;
@@ -1024,20 +1024,20 @@ class fm_learn_mcmc : public fm_learn {
 
 			DVector<double>& v_lambda_gamma = cache_for_group_values;
 			for (int f = 0; f < fm->num_factor; f++) {
-				for (uint g = 0; g < meta->num_attr_groups; g++) {
-					v_lambda_gamma(g) = beta_0 * (v_mu(g,f) - mu_0) * (v_mu(g,f) - mu_0) + gamma_0; 
+				for (unsigned g = 0; g < meta->num_attr_groups; g++) {
+					v_lambda_gamma[g] = beta_0 * (v_mu(g,f) - mu_0) * (v_mu(g,f) - mu_0) + gamma_0; 
 				}
-				for (uint i = 0; i < fm->num_attribute; i++) {
-					uint g = meta->attr_group(i);
-					v_lambda_gamma(g) += (fm->v(f,i) - v_mu(g,f)) * (fm->v(f,i) - v_mu(g,f));
+				for (unsigned i = 0; i < fm->num_attribute; i++) {
+					unsigned g = meta->attr_group(i);
+					v_lambda_gamma[g] += (fm->v(f,i) - v_mu(g,f)) * (fm->v(f,i) - v_mu(g,f));
 				}
-				for (uint g = 0; g < meta->num_attr_groups; g++) {
+				for (unsigned g = 0; g < meta->num_attr_groups; g++) {
 					double v_lambda_alpha = alpha_0 + meta->num_attr_per_group(g) + 1;
 					double v_lambda_old = v_lambda(g,f);
 					if (do_sample) {
-						v_lambda(g,f) = ran_gamma(v_lambda_alpha / 2.0, v_lambda_gamma(g) / 2.0);
+						v_lambda(g,f) = ran_gamma(v_lambda_alpha / 2.0, v_lambda_gamma[g] / 2.0);
 					} else {
-						v_lambda(g,f) = v_lambda_alpha / v_lambda_gamma(g);
+						v_lambda(g,f) = v_lambda_alpha / v_lambda_gamma[g];
 					}
 					if (std::isnan(v_lambda(g,f))) {
 						nan_cntr_v_lambda++;
@@ -1108,7 +1108,7 @@ class fm_learn_mcmc : public fm_learn {
 				}
 
 				std::ostringstream ss;
-				for (uint g = 0; g < meta->num_attr_groups; g++) {
+				for (unsigned g = 0; g < meta->num_attr_groups; g++) {
 					ss.str(""); ss << "wmu[" << g << "]"; log->addField(ss.str(), std::numeric_limits<double>::quiet_NaN());
 					ss.str(""); ss << "wlambda[" << g << "]"; log->addField(ss.str(), std::numeric_limits<double>::quiet_NaN());
 					for (int f = 0; f < fm->num_factor; f++) {
@@ -1135,26 +1135,26 @@ class fm_learn_mcmc : public fm_learn {
 			cache_test = new e_q_term[test.num_cases];
 
 			rel_cache.setSize(train.relation.dim);
-			for (uint r = 0; r < train.relation.dim; r++) {
+			for (unsigned r = 0; r < train.relation.dim; r++) {
 				MemoryLog::getInstance().logNew("relation_cache", sizeof(relation_cache), train.relation(r).data->num_cases);
-				rel_cache(r) = new relation_cache[train.relation(r).data->num_cases];
-				for (uint c = 0; c < train.relation(r).data->num_cases; c++) {
-					rel_cache(r)[c].wnum = 0;
+				rel_cache[r] = new relation_cache[train.relation(r).data->num_cases];
+				for (unsigned c = 0; c < train.relation(r).data->num_cases; c++) {
+					rel_cache[r][c].wnum = 0;
 				}
 			}
 
 			// calculate #^R
-			for (uint r = 0; r < train.relation.dim; r++) {
-				for (uint c = 0; c < train.relation(r).data_row_to_relation_row.dim; c++) {
-					rel_cache(r)[train.relation(r).data_row_to_relation_row(c)].wnum += 1.0;
+			for (unsigned r = 0; r < train.relation.dim; r++) {
+				for (unsigned c = 0; c < train.relation(r).data_row_to_relation_row.dim; c++) {
+					rel_cache[r][train.relation(r).data_row_to_relation_row(c)].wnum += 1.0;
 				}
 			}
 
 			_learn(train, test);
 
 			// free data structures
-			for (uint i = 0; i < train.relation.dim; i++) {
-				MemoryLog::getInstance().logFree("relation_cache", sizeof(relation_cache), train.relation(i).data->num_cases);
+			for (unsigned i = 0; i < train.relation.dim; i++) {
+				MemoryLog::getInstance().logFree("relation_cache", sizeof(relation_cache), train.relation[i].data->num_cases);
 				delete[] rel_cache(i);
 			}
 			MemoryLog::getInstance().logFree("e_q_term", sizeof(e_q_term), test.num_cases);

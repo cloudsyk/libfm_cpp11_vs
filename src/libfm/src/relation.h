@@ -19,11 +19,11 @@
 
 class RelationData {
 	protected:
-		uint cache_size;
+		unsigned cache_size;
 		bool has_xt;
 		bool has_x;
 	public:	
-		RelationData(uint cache_size, bool has_x, bool has_xt) { 
+		RelationData(unsigned cache_size, bool has_x, bool has_xt) { 
 			this->data_t = NULL;
 			this->data = NULL;
 			this->cache_size = cache_size;
@@ -37,8 +37,8 @@ class RelationData {
 		LargeSparseMatrix<DATA_FLOAT>* data;
 	
 		int num_feature;
-		uint num_cases;
-		uint attr_offset; 
+		unsigned num_cases;
+		unsigned attr_offset; 
  
 		void load(std::string filename);	
 		void debug();
@@ -47,20 +47,20 @@ class RelationData {
 
 class RelationJoin {
 	public:
-		DVector<uint> data_row_to_relation_row;
+		DVector<unsigned> data_row_to_relation_row;
 		RelationData* data;
 
-		void load(std::string filename, uint expected_row_count) {
+		void load(std::string filename, unsigned expected_row_count) {
 			bool do_binary = false;
 			// check if binary or text format should be read
 			{
 				std::ifstream in (filename.c_str(), std::ios_base::in | std::ios_base::binary);
 				if (in.is_open()) {
-					uint file_version;
-					uint data_size;
+					unsigned file_version;
+					unsigned data_size;
 					in.read(reinterpret_cast<char*>(&file_version), sizeof(file_version));
 					in.read(reinterpret_cast<char*>(&data_size), sizeof(data_size));
-					do_binary = ((file_version == DVECTOR_EXPECTED_FILE_ID) && (data_size == sizeof(uint)));
+					do_binary = ((file_version == DVECTOR_EXPECTED_FILE_ID) && (data_size == sizeof(unsigned)));
 					in.close();
 				}
 			}
@@ -83,8 +83,8 @@ void RelationData::load(std::string filename) {
 	assert(has_x || has_xt);
 
 	//uint num_cases = 0;
-	uint num_values = 0;
-	uint this_cs = cache_size;
+	unsigned num_values = 0;
+	unsigned this_cs = cache_size;
 	if (has_xt && has_x) { this_cs /= 2; }
 	
 	if (has_x) {
@@ -125,7 +125,7 @@ void RelationData::load(std::string filename) {
 void RelationData::debug() {
 	if (has_x) {
 		for (data->begin(); (!data->end()) && (data->getRowIndex() < 4); data->next() ) {
-			for (uint j = 0; j < data->getRow().size; j++) {
+			for (unsigned j = 0; j < data->getRow().size; j++) {
 				std::cout << " " << data->getRow().data[j].id << ":" << data->getRow().data[j].value;	
 			}
 			std::cout << std::endl;

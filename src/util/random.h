@@ -14,7 +14,6 @@
 #include <cmath>
 #include <assert.h>
 
-
 double ran_gaussian();
 double ran_gaussian(double mean, double stdev);
 double ran_left_tgaussian(double left);

@@ -136,17 +136,17 @@ int main(int argc, char **argv) {
 			relation.setSize(rel.size());
 			train.relation.setSize(rel.size());
 			test.relation.setSize(rel.size());
-			for (uint i = 0; i < rel.size(); i++) {
-				 relation(i) = new RelationData(
+			for (unsigned i = 0; i < rel.size(); i++) {
+				 relation[i] = new RelationData(
 					cmdline.getValue(param_cache_size, 0),
 					! (!cmdline.getValue(param_method).compare("mcmc")), // no original data for mcmc
 					! (!cmdline.getValue(param_method).compare("sgd") || !cmdline.getValue(param_method).compare("sgda")) // no transpose data for sgd, sgda
 				);
-				relation(i)->load(rel[i]);
-				train.relation(i).data = relation(i);
-				test.relation(i).data = relation(i);
-				train.relation(i).load(rel[i] + ".train", train.num_cases);
-				test.relation(i).load(rel[i] + ".test", test.num_cases);
+				relation[i]->load(rel[i]);
+				train.relation[i].data = relation[i];
+				test.relation[i].data = relation[i];
+				train.relation[i].load(rel[i] + ".train", train.num_cases);
+				test.relation[i].load(rel[i] + ".test", test.num_cases);
 			}
 		}
 		
@@ -154,9 +154,9 @@ int main(int argc, char **argv) {
 		std::cout << "Loading meta data...\t" << std::endl;
 		
 		// (main table)
-		uint num_all_attribute = std::max(train.num_feature, test.num_feature);
+		unsigned num_all_attribute = std::max(train.num_feature, test.num_feature);
 		if (validation != NULL) {
-			num_all_attribute = std::max(num_all_attribute, (uint) validation->num_feature);
+			num_all_attribute = std::max(num_all_attribute, (unsigned) validation->num_feature);
 		}
 		DataMetaInfo meta_main(num_all_attribute);
 		if (cmdline.hasParameter(param_meta_file)) {
@@ -164,29 +164,29 @@ int main(int argc, char **argv) {
 		}
 		
 		// build the joined meta table
-		for (uint r = 0; r < train.relation.dim; r++) {
+		for (unsigned r = 0; r < train.relation.dim; r++) {
 			train.relation(r).data->attr_offset = num_all_attribute;
 			num_all_attribute += train.relation(r).data->num_feature;
 		}
 		DataMetaInfo meta(num_all_attribute);
 		{
 			meta.num_attr_groups = meta_main.num_attr_groups;
-			for (uint r = 0; r < relation.dim; r++) {
+			for (unsigned r = 0; r < relation.dim; r++) {
 				meta.num_attr_groups += relation(r)->meta->num_attr_groups;
 			}
 			meta.num_attr_per_group.setSize(meta.num_attr_groups);
 			meta.num_attr_per_group.init(0);		
-			for (uint i = 0; i < meta_main.attr_group.dim; i++) {
-				meta.attr_group(i) = meta_main.attr_group(i);
-				meta.num_attr_per_group(meta.attr_group(i))++;
+			for (unsigned i = 0; i < meta_main.attr_group.dim; i++) {
+				meta.attr_group[i] = meta_main.attr_group(i);
+				meta.num_attr_per_group[meta.attr_group(i)]++;
 			}
 
-			uint attr_cntr = meta_main.attr_group.dim;
-			uint attr_group_cntr = meta_main.num_attr_groups;
-			for (uint r = 0; r < relation.dim; r++) {
-				for (uint i = 0; i < relation(r)->meta->attr_group.dim; i++) {
-					meta.attr_group(i+attr_cntr) = attr_group_cntr + relation(r)->meta->attr_group(i);
-					meta.num_attr_per_group(attr_group_cntr + relation(r)->meta->attr_group(i))++;
+			unsigned attr_cntr = meta_main.attr_group.dim;
+			unsigned attr_group_cntr = meta_main.num_attr_groups;
+			for (unsigned r = 0; r < relation.dim; r++) {
+				for (unsigned i = 0; i < relation(r)->meta->attr_group.dim; i++) {
+					meta.attr_group[i+attr_cntr] = attr_group_cntr + relation(r)->meta->attr_group(i);
+					meta.num_attr_per_group[attr_group_cntr + relation(r)->meta->attr_group(i)]++;
 				}
 				attr_cntr += relation(r)->meta->attr_group.dim;
 				attr_group_cntr += relation(r)->meta->num_attr_groups;
@@ -197,46 +197,41 @@ int main(int argc, char **argv) {
 		meta.num_relations = train.relation.dim;
 
 		// (2) Setup the factorization machine
-		fm_model fm;
-		{
-			fm.num_attribute = num_all_attribute;
-			fm.init_stdev = cmdline.getValue(param_init_stdev, 0.1);
-			// set the number of dimensions in the factorization
-			{ 
-				vector<int> dim = cmdline.getIntValues(param_dim);
-				assert(dim.size() == 3);
-				fm.k0 = dim[0] != 0;
-				fm.k1 = dim[1] != 0;
-				fm.num_factor = dim[2];					
-			}			
-			fm.init();		
-			
-		}
+        vector<int> dim = cmdline.getIntValues(param_dim);
+        assert(dim.size() == 3);
+        // set the number of dimensions in the factorization
+		fm_model fm(num_all_attribute, cmdline.getValue(param_init_stdev, 0.1), dim);
 
 		// (3) Setup the learning method:
+        parameter_outside para_set;
+        para_set.num_iter = cmdline.getValue(param_num_iter, 100);
+        para_set.validation = validation;
+        para_set.num_eval_cases = cmdline.getValue(param_num_eval_cases, test.num_cases);
+        para_set.do_sample = cmdline.getValue(param_do_sampling, true);
+        para_set.do_multilevel = cmdline.getValue(param_do_multilevel, true);
 		fm_learn* fml;
 		if (! cmdline.getValue(param_method).compare("sgd")) {
 	 		fml = new fm_learn_sgd_element();
-			((fm_learn_sgd*)fml)->num_iter = cmdline.getValue(param_num_iter, 100);
+			//((fm_learn_sgd*)fml)->num_iter = cmdline.getValue(param_num_iter, 100);
 
 		} else if (! cmdline.getValue(param_method).compare("sgda")) {
 			assert(validation != NULL);		
 	 		fml = new fm_learn_sgd_element_adapt_reg();
-			((fm_learn_sgd*)fml)->num_iter = cmdline.getValue(param_num_iter, 100);
-			((fm_learn_sgd_element_adapt_reg*)fml)->validation = validation;
+			//((fm_learn_sgd*)fml)->num_iter = cmdline.getValue(param_num_iter, 100);
+			//((fm_learn_sgd_element_adapt_reg*)fml)->validation = validation;
 
 		} else if (! cmdline.getValue(param_method).compare("mcmc")) {
 			fm.w.init_normal(fm.init_mean, fm.init_stdev);
 	 		fml = new fm_learn_mcmc_simultaneous();
-			fml->validation = validation;
-			((fm_learn_mcmc*)fml)->num_iter = cmdline.getValue(param_num_iter, 100);
-			((fm_learn_mcmc*)fml)->num_eval_cases = cmdline.getValue(param_num_eval_cases, test.num_cases);
-		
-			((fm_learn_mcmc*)fml)->do_sample = cmdline.getValue(param_do_sampling, true);
-			((fm_learn_mcmc*)fml)->do_multilevel = cmdline.getValue(param_do_multilevel, true);
+			//fml->validation = validation;
+			//((fm_learn_mcmc*)fml)->num_iter = cmdline.getValue(param_num_iter, 100);
+			//((fm_learn_mcmc*)fml)->num_eval_cases = cmdline.getValue(param_num_eval_cases, test.num_cases);
+			//((fm_learn_mcmc*)fml)->do_sample = cmdline.getValue(param_do_sampling, true);
+			//((fm_learn_mcmc*)fml)->do_multilevel = cmdline.getValue(param_do_multilevel, true);
 		} else {
 			throw "unknown method";
 		}
+        fml->set_up(para_set);
 		fml->fm = &fm;
 		fml->max_target = train.max_target;
 		fml->min_target = train.min_target;
@@ -245,10 +240,10 @@ int main(int argc, char **argv) {
 			fml->task = 0;
 		} else if (! cmdline.getValue("task").compare("c") ) {
 			fml->task = 1;
-			for (uint i = 0; i < train.target.dim; i++) { if (train.target(i) <= 0.0) { train.target(i) = -1.0; } else {train.target(i) = 1.0; } }
-			for (uint i = 0; i < test.target.dim; i++) { if (test.target(i) <= 0.0) { test.target(i) = -1.0; } else {test.target(i) = 1.0; } }
+			for (unsigned i = 0; i < train.target.dim; i++) { if (train.target[i] <= 0.0) { train.target[i] = -1.0; } else {train.target[i] = 1.0; } }
+			for (unsigned i = 0; i < test.target.dim; i++) { if (test.target[i] <= 0.0) { test.target[i] = -1.0; } else {test.target[i] = 1.0; } }
 			if (validation != NULL) {
-				for (uint i = 0; i < validation->target.dim; i++) { if (validation->target(i) <= 0.0) { validation->target(i) = -1.0; } else {validation->target(i) = 1.0; } }
+				for (unsigned i = 0; i < validation->target.dim; i++) { if (validation->target[i] <= 0.0) { validation->target[i] = -1.0; } else {validation->target[i] = 1.0; } }
 			}
 		} else {
 			throw "unknown task";
@@ -297,11 +292,11 @@ int main(int argc, char **argv) {
 					fm.regw = 0.0;
 					fm.regv = 0.0;
 					int j = 1;
-					for (uint g = 0; g < meta.num_attr_groups; g++) {
-						((fm_learn_mcmc*)fml)->w_lambda(g) = reg[j];
+					for (unsigned g = 0; g < meta.num_attr_groups; g++) {
+						((fm_learn_mcmc*)fml)->w_lambda[g] = reg[j];
 						j++;
 					}
-					for (uint g = 0; g < meta.num_attr_groups; g++) {
+					for (unsigned g = 0; g < meta.num_attr_groups; g++) {
 						for (int f = 0; f < fm.num_factor; f++) {
 							((fm_learn_mcmc*)fml)->v_lambda(g,f) = reg[j];
 						}
@@ -310,7 +305,8 @@ int main(int argc, char **argv) {
 				}
 
 			}
-		} else {
+		} 
+        else {//not mcmc
 			// set the regularization; for standard SGD, groups are not supported
 			{ 
 	 			vector<double> reg = cmdline.getDblValues(param_regular);
@@ -329,7 +325,8 @@ int main(int argc, char **argv) {
 					fm.regv = reg[2];
 				}		
 			}
-		}
+		}//else
+
 		{
 			fm_learn_sgd* fmlsgd= dynamic_cast<fm_learn_sgd*>(fml); 
 			if (fmlsgd) {
@@ -342,9 +339,9 @@ int main(int argc, char **argv) {
 						fmlsgd->learn_rates.init(lr[0]);
 					} else {
 						fmlsgd->learn_rate = 0;
-						fmlsgd->learn_rates(0) = lr[0];
-						fmlsgd->learn_rates(1) = lr[1];
-						fmlsgd->learn_rates(2) = lr[2];
+                        fmlsgd->learn_rates[0] = lr[0];
+                        fmlsgd->learn_rates[1] = lr[1];
+                        fmlsgd->learn_rates[2] = lr[2];
 					}		
 				}
 			}

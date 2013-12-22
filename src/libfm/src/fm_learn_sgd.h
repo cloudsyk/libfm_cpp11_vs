@@ -64,7 +64,7 @@ class fm_learn_sgd: public fm_learn {
 				} else {
 					throw "task not supported";
 				}
-				out(data.data->getRowIndex()) = p;
+				out[data.data->getRowIndex()] = p;
 			}				
 		} 
 

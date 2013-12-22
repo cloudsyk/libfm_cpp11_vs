@@ -119,6 +119,12 @@ class CMDLine {
 			}
 		}
 
+        //template<class T1>
+        //auto getValue(const std::string& parameter, const T1 &default_value) -> decltype(default_value)
+        //{
+        //    return default_value;
+        //}
+
 		const double getValue(const std::string& parameter, const double& default_value) {
 			if (hasParameter(parameter)) {
 				return atof(value[parameter].c_str());
@@ -135,7 +141,7 @@ class CMDLine {
 			}
 		}
 
-		const uint getValue(const std::string& parameter, const uint& default_value) {
+		const unsigned getValue(const std::string& parameter, const unsigned& default_value) {
 			if (hasParameter(parameter)) {
 				return atoi(value[parameter].c_str());
 			} else {
@@ -151,7 +157,7 @@ class CMDLine {
 			std::vector<int> result; 
 			std::vector<std::string> result_str = getStrValues(parameter);
 			result.resize(result_str.size());
-			for (uint i = 0; i < result.size(); i++) {
+			for (unsigned i = 0; i < result.size(); i++) {
 				result[i] = atoi(result_str[i].c_str());
 			}
 			return result;
@@ -160,16 +166,16 @@ class CMDLine {
 			std::vector<double> result; 
 			std::vector<std::string> result_str = getStrValues(parameter);
 			result.resize(result_str.size());
-			for (uint i = 0; i < result.size(); i++) {
+			for (unsigned i = 0; i < result.size(); i++) {
 				result[i] = atof(result_str[i].c_str());
 			}
 			return result;
 		}
-		std::vector<uint> getUIntValues(const std::string& parameter) {
-			std::vector<uint> result; 
+		std::vector<unsigned> getUIntValues(const std::string& parameter) {
+			std::vector<unsigned> result; 
 			std::vector<std::string> result_str = getStrValues(parameter);
 			result.resize(result_str.size());
-			for (uint i = 0; i < result.size(); i++) {
+			for (unsigned i = 0; i < result.size(); i++) {
 				result[i] = atoi(result_str[i].c_str());
 			}
 			return result;

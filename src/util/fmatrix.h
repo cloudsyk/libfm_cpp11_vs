@@ -19,24 +19,24 @@
 
 
 
-const uint FMATRIX_EXPECTED_FILE_ID = 2;
+const unsigned FMATRIX_EXPECTED_FILE_ID = 2;
 
 template <typename T> struct sparse_entry {
-    uint id;
+    unsigned id;
     T value;
 };
 	
 template <typename T> struct sparse_row {
 	sparse_entry<T>* data;
-	uint size;
+	unsigned size;
 };
 
 struct file_header {
-	uint id;
-	uint float_size;
+	unsigned id;
+	unsigned float_size;
 	uint64 num_values;
-	uint num_rows;
-	uint num_cols;
+	unsigned num_rows;
+	unsigned num_cols;
 }; 
 
 template <typename T> class LargeSparseMatrix {
@@ -45,9 +45,9 @@ template <typename T> class LargeSparseMatrix {
 		virtual bool end() = 0;   // are we at the end?
 		virtual void next() = 0; // go to the next line
 		virtual sparse_row<T>& getRow() = 0; // pointer to the current row 
-		virtual uint getRowIndex() = 0; // index of current row (starting with 0)
-		virtual uint getNumRows() = 0; // get the number of Rows
-		virtual uint getNumCols() = 0; // get the number of Cols
+		virtual unsigned getRowIndex() = 0; // index of current row (starting with 0)
+		virtual unsigned getNumRows() = 0; // get the number of Rows
+		virtual unsigned getNumCols() = 0; // get the number of Cols
 		virtual uint64 getNumValues() = 0; // get the number of Values
 		
 
@@ -63,7 +63,7 @@ template <typename T> class LargeSparseMatrix {
 				fh.float_size = sizeof(T);
 				out.write(reinterpret_cast<char*>(&fh), sizeof(fh));
 				for (begin(); !end(); next()) {
-					out.write(reinterpret_cast<char*>(&(getRow().size)), sizeof(uint));
+					out.write(reinterpret_cast<char*>(&(getRow().size)), sizeof(unsigned));
 					out.write(reinterpret_cast<char*>(getRow().data), sizeof(sparse_entry<T>)*getRow().size);
 				}
 				out.close();
@@ -77,7 +77,7 @@ template <typename T> class LargeSparseMatrix {
 			std::ofstream out(filename.c_str());
 			if (out.is_open()) {
 				for (begin(); !end(); next()) {
-					for (uint i = 0; i < getRow().size; i++) {
+					for (unsigned i = 0; i < getRow().size; i++) {
 						out << getRow().data[i].id << ":" << getRow().data[i].value;
 						if ((i+1) < getRow().size) {
 							out << " ";
@@ -102,13 +102,13 @@ template <typename T> class LargeSparseMatrixHD : public LargeSparseMatrix<T> {
 		std::ifstream in;
 
 		uint64 position_in_data_cache;
-		uint number_of_valid_rows_in_cache;
+		unsigned number_of_valid_rows_in_cache;
 		uint64 number_of_valid_entries_in_cache;
-		uint row_index;
+		unsigned row_index;
 
-		uint num_cols;
+		unsigned num_cols;
 		uint64 num_values;
-		uint num_rows;	
+		unsigned num_rows;	
 
 		void readcache() {
 			if (row_index >= num_rows) { return; }
@@ -123,9 +123,9 @@ template <typename T> class LargeSparseMatrixHD : public LargeSparseMatrix<T> {
 
 				sparse_row<T>& this_row = data.value[number_of_valid_rows_in_cache];
 				
-				in.read(reinterpret_cast<char*>(&(this_row.size)), sizeof(uint));
+				in.read(reinterpret_cast<char*>(&(this_row.size)), sizeof(unsigned));
 				if ((this_row.size + number_of_valid_entries_in_cache) > cache.dim) {
-					in.seekg(- (long int) sizeof(uint), std::ios::cur);
+					in.seekg(- (long int) sizeof(unsigned), std::ios::cur);
 					break;
 				}
 
@@ -159,17 +159,17 @@ template <typename T> class LargeSparseMatrixHD : public LargeSparseMatrix<T> {
 			}
 			// determine cache sizes automatically:
 			double avg_entries_per_line = (double) this->num_values / this->num_rows;
-			uint num_rows_in_cache;
+			unsigned num_rows_in_cache;
 			{
-				uint64 dummy = cache_size / (sizeof(sparse_entry<T>) * avg_entries_per_line + sizeof(uint));
-				if (dummy > static_cast<uint64>(std::numeric_limits<uint>::max())) {
-					num_rows_in_cache = std::numeric_limits<uint>::max();
+				uint64 dummy = cache_size / (sizeof(sparse_entry<T>) * avg_entries_per_line + sizeof(unsigned));
+				if (dummy > static_cast<uint64>(std::numeric_limits<unsigned>::max())) {
+					num_rows_in_cache = std::numeric_limits<unsigned>::max();
 				} else {
 					num_rows_in_cache = dummy;
 				}
 			}
 			num_rows_in_cache = std::min(num_rows_in_cache, this->num_rows);
-			uint64 num_entries_in_cache = (cache_size - sizeof(uint)*num_rows_in_cache) / sizeof(sparse_entry<T>);
+			uint64 num_entries_in_cache = (cache_size - sizeof(unsigned)*num_rows_in_cache) / sizeof(sparse_entry<T>);
 			num_entries_in_cache = std::min(num_entries_in_cache, this->num_values);
 			std::cout << "num entries in cache=" << num_entries_in_cache << "\tnum rows in cache=" << num_rows_in_cache << std::endl;
 
@@ -178,8 +178,8 @@ template <typename T> class LargeSparseMatrixHD : public LargeSparseMatrix<T> {
 		}
 //		~LargeSparseMatrixHD() { in.close(); }
 
-		virtual uint getNumRows() { return num_rows; };
-		virtual uint getNumCols() { return num_cols; };
+		virtual unsigned getNumRows() { return num_rows; };
+		virtual unsigned getNumCols() { return num_cols; };
 		virtual uint64 getNumValues() { return num_values; };
 
 		virtual void next() {
@@ -212,25 +212,25 @@ template <typename T> class LargeSparseMatrixHD : public LargeSparseMatrix<T> {
 		virtual bool end() { return row_index >= num_rows; }
 
 		virtual sparse_row<T>& getRow() { return data(position_in_data_cache); }
-		virtual uint getRowIndex() { return row_index; }
+		virtual unsigned getRowIndex() { return row_index; }
 	
 	
 };
 
 template <typename T> class LargeSparseMatrixMemory : public LargeSparseMatrix<T> {
 	protected:
-		 uint index;
+		 unsigned index;
 	public:
 		DVector< sparse_row<T> > data;
-		uint num_cols;
+		unsigned num_cols;
 		uint64 num_values;
 		virtual void begin() { index = 0; };
 		virtual bool end() { return index >= data.dim; }
 		virtual void next() { index++;}
 		virtual sparse_row<T>& getRow() { return data(index); };
-		virtual uint getRowIndex() { return index; };
-		virtual uint getNumRows() { return data.dim; };
-		virtual uint getNumCols() { return num_cols; };
+		virtual unsigned getRowIndex() { return index; };
+		virtual unsigned getNumRows() { return data.dim; };
+		virtual unsigned getNumCols() { return num_cols; };
 		virtual uint64 getNumValues() { return num_values; };
 
 //		void loadFromTextFile(std::string filename);

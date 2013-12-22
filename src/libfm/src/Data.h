@@ -22,35 +22,35 @@ typedef FM_FLOAT DATA_FLOAT;
 
 class DataMetaInfo {
 	public:
-		DVector<uint> attr_group; // attribute_id -> group_id
-		uint num_attr_groups;
-		DVector<uint> num_attr_per_group;
-		uint num_relations;
+		DVector<unsigned> attr_group; // attribute_id -> group_id
+		unsigned num_attr_groups;
+		DVector<unsigned> num_attr_per_group;
+		unsigned num_relations;
 
-		DataMetaInfo(uint num_attributes) {
+		DataMetaInfo(unsigned num_attributes) {
 			attr_group.setSize(num_attributes);
 			attr_group.init(0);
 			num_attr_groups = 1;
 			num_attr_per_group.setSize(num_attr_groups);
-			num_attr_per_group(0) = num_attributes;
+			num_attr_per_group[0] = num_attributes;
 		}
 		void loadGroupsFromFile(std::string filename) {
 			assert(fileexists(filename));
 			attr_group.load(filename);
 			num_attr_groups = 0;
-			for (uint i = 0; i < attr_group.dim; i++) {
+			for (unsigned i = 0; i < attr_group.dim; i++) {
 				num_attr_groups = std::max(num_attr_groups, attr_group(i)+1);
 			}
 			num_attr_per_group.setSize(num_attr_groups);
 			num_attr_per_group.init(0);
-			for (uint i = 0; i < attr_group.dim; i++) {
-				num_attr_per_group(attr_group(i))++;
+			for (unsigned i = 0; i < attr_group.dim; i++) {
+				num_attr_per_group[attr_group(i)]++;
 			}
 		}
 	
 		void debug() {
 			std::cout << "#attr=" << attr_group.dim << "\t#groups=" << num_attr_groups << std::endl;
-			for (uint g = 0; g < num_attr_groups; g++) {
+			for (unsigned g = 0; g < num_attr_groups; g++) {
 				std::cout << "#attr_in_group[" << g << "]=" << num_attr_per_group(g) << std::endl;
 			}
 		}
@@ -77,7 +77,7 @@ class Data {
 		DVector<DATA_FLOAT> target;
 
 		int num_feature;
-		uint num_cases;
+		unsigned num_cases;
  
 		DATA_FLOAT min_target;
 		DATA_FLOAT max_target;
@@ -105,7 +105,7 @@ void Data::load(std::string filename) {
 
 
 	if (load_from > 0) {
-		uint num_values = 0;
+		unsigned num_values = 0;
 		uint64 this_cs = cache_size;
 		if (has_xt && has_x) { this_cs /= 2; }
 		
@@ -147,9 +147,9 @@ void Data::load(std::string filename) {
 		}
 		min_target = +std::numeric_limits<DATA_FLOAT>::max();
 		max_target = -std::numeric_limits<DATA_FLOAT>::max();
-		for (uint i = 0; i < this->target.dim; i++) {
-			min_target = std::min(this->target(i), min_target);
-			max_target = std::max(this->target(i), max_target);				
+		for (unsigned i = 0; i < this->target.dim; i++) {
+			min_target = std::min(this->target[i], min_target);
+			max_target = std::max(this->target[i], max_target);				
 		}
 		num_cases = target.dim;
 
@@ -281,13 +281,13 @@ void Data::create_data_t() {
 	data_t.setSize(num_feature);
 		
 	// find dimensionality of matrix
-	DVector<uint> num_values_per_column;
+	DVector<unsigned> num_values_per_column;
 	num_values_per_column.setSize(num_feature);
 	num_values_per_column.init(0);
 	long long num_values = 0;
-	for (uint i = 0; i < data.dim; i++) {
-		for (uint j = 0; j < data(i).size; j++) {
-			num_values_per_column(data(i).data[j].id)++;
+	for (unsigned i = 0; i < data.dim; i++) {
+		for (unsigned j = 0; j < data(i).size; j++) {
+			num_values_per_column[data(i).data[j].id]++;
 			num_values++;
 		}
 	}	
@@ -300,21 +300,21 @@ void Data::create_data_t() {
 	MemoryLog::getInstance().logNew("data_float", sizeof(sparse_entry<DATA_FLOAT>), num_values);			
 	sparse_entry<DATA_FLOAT>* cache = new sparse_entry<DATA_FLOAT>[num_values];
 	long long cache_id = 0;
-	for (uint i = 0; i < data_t.dim; i++) {
+	for (unsigned i = 0; i < data_t.dim; i++) {
 		data_t.value[i].data = &(cache[cache_id]);
-		data_t(i).size = num_values_per_column(i);
+		data_t[i].size = num_values_per_column(i);
 		cache_id += num_values_per_column(i);				
 	} 
 	// write the data into the transpose matrix
 	num_values_per_column.init(0); // num_values per column now contains the pointer on the first empty field
-	for (uint i = 0; i < data.dim; i++) {
-		for (uint j = 0; j < data(i).size; j++) {
-			uint f_id = data(i).data[j].id;
-			uint cntr = num_values_per_column(f_id);
-			assert(cntr < (uint) data_t(f_id).size);
+	for (unsigned i = 0; i < data.dim; i++) {
+		for (unsigned j = 0; j < data(i).size; j++) {
+			unsigned f_id = data(i).data[j].id;
+			unsigned cntr = num_values_per_column(f_id);
+			assert(cntr < (unsigned) data_t(f_id).size);
 			data_t(f_id).data[cntr].id = i;
 			data_t(f_id).data[cntr].value = data(i).data[j].value;
-			num_values_per_column(f_id)++;
+			num_values_per_column[f_id]++;
 		}
 	}
 	num_values_per_column.setSize(0);
@@ -325,7 +325,7 @@ void Data::debug() {
 	if (has_x) {
 		for (data->begin(); (!data->end()) && (data->getRowIndex() < 4); data->next() ) {
 			std::cout << target(data->getRowIndex());
-			for (uint j = 0; j < data->getRow().size; j++) {
+			for (unsigned j = 0; j < data->getRow().size; j++) {
 				std::cout << " " << data->getRow().data[j].id << ":" << data->getRow().data[j].value;	
 			}
 			std::cout << std::endl;

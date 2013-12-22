@@ -48,6 +48,12 @@ class fm_learn_sgd_element_adapt_reg: public fm_learn_sgd {
 		DVector<double> lambda_w_grad;
 		DVector<double> sum_f, sum_f_dash_f;
 
+        int set_up(const parameter_outside& para_set) override
+        {
+            num_iter = para_set.num_iter;
+            validation = para_set.validation;
+            return 1;
+        }
 
 		virtual void init() {
 			fm_learn_sgd::init();
@@ -88,7 +94,7 @@ class fm_learn_sgd_element_adapt_reg: public fm_learn_sgd {
 						log->addField(ss.str(), std::numeric_limits<double>::quiet_NaN());
 					}
 				}
-				for (uint g = 0; g < meta->num_attr_groups; g++) {
+				for (unsigned g = 0; g < meta->num_attr_groups; g++) {
 					{
 						std::ostringstream ss;
 						ss << "regw[" << g << "]";
@@ -124,16 +130,16 @@ class fm_learn_sgd_element_adapt_reg: public fm_learn_sgd {
 				w0 -= learn_rate * (grad_0 + 2 * reg_0 * w0);
 			}
 			if (fm->k1) {
-				for (uint i = 0; i < x.size; i++) {
-					uint g = meta->attr_group(x.data[i].id);
-					double& w = fm->w(x.data[i].id);
-					grad_w(x.data[i].id) = mult * x.data[i].value;
+				for (unsigned i = 0; i < x.size; i++) {
+					unsigned g = meta->attr_group(x.data[i].id);
+					double& w = fm->w[x.data[i].id];
+					grad_w[x.data[i].id] = mult * x.data[i].value;
 					w -= learn_rate * (grad_w(x.data[i].id) + 2 * reg_w(g) * w);
 				}
 			}	
 			for (int f = 0; f < fm->num_factor; f++) {
-				for (uint i = 0; i < x.size; i++) {
-					uint g = meta->attr_group(x.data[i].id);
+				for (unsigned i = 0; i < x.size; i++) {
+					unsigned g = meta->attr_group(x.data[i].id);
 					double& v = fm->v(f,x.data[i].id);
 					grad_v(f,x.data[i].id) = mult * (x.data[i].value * (sum(f) - v * x.data[i].value)); // grad_v_if = (y(x)-y) * [ x_i*(\sum_j x_j v_jf) - v_if*x^2 ]			
 					v -= learn_rate * (grad_v(f,x.data[i].id) + 2 * reg_v(g,f) * v);
@@ -147,24 +153,24 @@ class fm_learn_sgd_element_adapt_reg: public fm_learn_sgd {
 				p += fm->w0; 
 			}
 			if (fm->k1) {
-				for (uint i = 0; i < x.size; i++) {
+				for (unsigned i = 0; i < x.size; i++) {
 					assert(x.data[i].id < fm->num_attribute);
-					uint g = meta->attr_group(x.data[i].id);
-					double& w = fm->w(x.data[i].id); 
+					unsigned g = meta->attr_group(x.data[i].id);
+					double& w = fm->w[x.data[i].id]; 
 					double w_dash = w - learn_rate * (grad_w(x.data[i].id) + 2 * reg_w(g) * w);
 					p += w_dash * x.data[i].value; 
 				}
 			}
 			for (int f = 0; f < fm->num_factor; f++) {
-				sum(f) = 0.0;
-				sum_sqr(f) = 0.0;
-				for (uint i = 0; i < x.size; i++) {
-					uint g = meta->attr_group(x.data[i].id);
+				sum[f] = 0.0;
+				sum_sqr[f] = 0.0;
+				for (unsigned i = 0; i < x.size; i++) {
+					unsigned g = meta->attr_group(x.data[i].id);
 					double& v = fm->v(f,x.data[i].id); 
 					double v_dash = v - learn_rate * (grad_v(f,x.data[i].id) + 2 * reg_v(g,f) * v);
 					double d = v_dash * x.data[i].value;
-					sum(f) += d;
-					sum_sqr(f) += d*d;
+					sum[f] += d;
+					sum_sqr[f] += d*d;
 				}
 				p += 0.5 * (sum(f)*sum(f) - sum_sqr(f));
 			}
@@ -184,14 +190,14 @@ class fm_learn_sgd_element_adapt_reg: public fm_learn_sgd {
 					
 			if (fm->k1) {
 				lambda_w_grad.init(0.0);
-				for (uint i = 0; i < x.size; i++) {
-					uint g = meta->attr_group(x.data[i].id);
-					lambda_w_grad(g) += x.data[i].value * fm->w(x.data[i].id); 
+				for (unsigned i = 0; i < x.size; i++) {
+					unsigned g = meta->attr_group(x.data[i].id);
+					lambda_w_grad[g] += x.data[i].value * fm->w(x.data[i].id); 
 				}
-				for (uint g = 0; g < meta->num_attr_groups; g++) {
-					lambda_w_grad(g) = -2 * learn_rate * lambda_w_grad(g); 
-					reg_w(g) -= learn_rate * grad_loss * lambda_w_grad(g);
-					reg_w(g) = std::max(0.0, reg_w(g));
+				for (unsigned g = 0; g < meta->num_attr_groups; g++) {
+					lambda_w_grad[g] = -2 * learn_rate * lambda_w_grad(g); 
+					reg_w[g] -= learn_rate * grad_loss * lambda_w_grad(g);
+					reg_w[g] = std::max(0.0, reg_w(g));
 				}
 			}	
 			for (int f = 0; f < fm->num_factor; f++) {
@@ -202,17 +208,17 @@ class fm_learn_sgd_element_adapt_reg: public fm_learn_sgd {
 				double sum_f_dash = 0.0;
 				sum_f.init(0.0);
 				sum_f_dash_f.init(0.0);
-				for (uint i = 0; i < x.size; i++) {
+				for (unsigned i = 0; i < x.size; i++) {
 					// v_if' =  [ v_if * (1-alpha*lambda_v_f) - alpha * grad_v_if] 
-					uint g = meta->attr_group(x.data[i].id);
+					unsigned g = meta->attr_group(x.data[i].id);
 					double& v = fm->v(f,x.data[i].id); 
 					double v_dash = v - learn_rate * (grad_v(f,x.data[i].id) + 2 * reg_v(g,f) * v);
 					
 					sum_f_dash += v_dash * x.data[i].value;
-					sum_f(g) += v * x.data[i].value; 
-					sum_f_dash_f(g) += v_dash * x.data[i].value * v * x.data[i].value;
+					sum_f[g] += v * x.data[i].value; 
+					sum_f_dash_f[g]+= v_dash * x.data[i].value * v * x.data[i].value;
 				}
-				for (uint g = 0; g < meta->num_attr_groups; g++) {
+				for (unsigned g = 0; g < meta->num_attr_groups; g++) {
 					double lambda_v_grad = -2 * learn_rate *  (sum_f_dash * sum_f(g) - sum_f_dash_f(g));  
 					reg_v(g,f) -= learn_rate * grad_loss * lambda_v_grad;
 					reg_v(g,f) = std::max(0.0, reg_v(g,f));
@@ -226,24 +232,24 @@ class fm_learn_sgd_element_adapt_reg: public fm_learn_sgd {
 			mean_v.init(0);
 			var_w = 0;
 			var_v.init(0);
-			for (uint j = 0; j < fm->num_attribute; j++) {
+			for (unsigned j = 0; j < fm->num_attribute; j++) {
 				mean_w += fm->w(j);
 				var_w += fm->w(j)*fm->w(j);
 				for (int f = 0; f < fm->num_factor; f++) {
-					mean_v(f) += fm->v(f,j);
-					var_v(f) += fm->v(f,j)*fm->v(f,j);
+					mean_v[f] += fm->v(f,j);
+					var_v[f] += fm->v(f,j)*fm->v(f,j);
 				}
 			}
 			mean_w /= (double) fm->num_attribute;
 			var_w = var_w/fm->num_attribute - mean_w*mean_w;
 			for (int f = 0; f < fm->num_factor; f++) {
-				mean_v(f) /= fm->num_attribute;
-				var_v(f) = var_v(f)/fm->num_attribute - mean_v(f)*mean_v(f);
+				mean_v[f] /= fm->num_attribute;
+				var_v[f] = var_v(f)/fm->num_attribute - mean_v(f)*mean_v(f);
 			}
 
 			mean_w = 0;
 			for (int f = 0; f < fm->num_factor; f++) {
-				mean_v(f) = 0;
+				mean_v[f] = 0;
 			}			
 		}
 
@@ -307,7 +313,7 @@ class fm_learn_sgd_element_adapt_reg: public fm_learn_sgd {
 							log->log(ss.str(), var_v(f));
 						}
 					}
-					for (uint g = 0; g < meta->num_attr_groups; g++) {
+					for (unsigned g = 0; g < meta->num_attr_groups; g++) {
 						{
 							std::ostringstream ss;
 							ss << "regw[" << g << "]";

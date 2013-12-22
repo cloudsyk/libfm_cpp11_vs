@@ -23,25 +23,35 @@
 
 class fm_learn_mcmc_simultaneous : public fm_learn_mcmc {
 	protected:
+
+        int set_up(const parameter_outside& para_set) override
+        {
+            num_iter = para_set.num_iter;
+            validation = para_set.validation;
+            num_eval_cases = para_set.num_eval_cases;
+            do_sample = para_set.do_sample;
+            do_multilevel = para_set.do_multilevel;
+            return 1;
+        }
 		
 		virtual void _learn(Data& train, Data& test) {
 			
-			uint num_complete_iter = 0;
+			unsigned num_complete_iter = 0;
 
 			// make a collection of datasets that are predicted jointly
 			int num_data = 2;
 			DVector<Data*> main_data(num_data);
 			DVector<e_q_term*> main_cache(num_data);
-			main_data(0) = &train;
-			main_data(1) = &test;
-			main_cache(0) = cache;
-			main_cache(1) = cache_test;
+			main_data[0] = &train;
+			main_data[1] = &test;
+			main_cache[0] = cache;
+			main_cache[1] = cache_test;
 	
 
 			predict_data_and_write_to_eterms(main_data, main_cache);
 			if (task == TASK_REGRESSION) {
 				// remove the target from each prediction, because: e(c) := \hat{y}(c) - target(c)
-				for (uint c = 0; c < train.num_cases; c++) {
+				for (unsigned c = 0; c < train.num_cases; c++) {
 					cache[c].e = cache[c].e - train.target(c);
 				}
 
@@ -49,7 +59,7 @@ class fm_learn_mcmc_simultaneous : public fm_learn_mcmc {
 				// for Classification: remove from e not the target but a sampled value from a truncated normal
 				// for initializing, they are not sampled but initialized with meaningful values:
 				// -1 for the negative class and +1 for the positive class (actually these are the values that are already in the target and thus, we can do the same as for regression; but note that other initialization strategies would need other techniques here:
-				for (uint c = 0; c < train.num_cases; c++) {
+				for (unsigned c = 0; c < train.num_cases; c++) {
 					cache[c].e = cache[c].e - train.target(c);
 				}
 
@@ -59,7 +69,7 @@ class fm_learn_mcmc_simultaneous : public fm_learn_mcmc {
 
 
 			
-			for (uint i = num_complete_iter; i < num_iter; i++) {
+			for (unsigned i = num_complete_iter; i < num_iter; i++) {
 				double iteration_time = getusertime();
 				clock_t iteration_time3 = clock();
 				double iteration_time4 = getusertime4();
@@ -106,19 +116,19 @@ class fm_learn_mcmc_simultaneous : public fm_learn_mcmc {
 				double rmse_train = 0.0;
 				if (task == TASK_REGRESSION) {
 					// evaluate test and store it
-					for (uint c = 0; c < test.num_cases; c++) {
+					for (unsigned c = 0; c < test.num_cases; c++) {
 						double p = cache_test[c].e;
-						pred_this(c) = p;
+						pred_this[c] = p;
 						p = std::min(max_target, p);
 						p = std::max(min_target, p);
-						pred_sum_all(c) += p;
+						pred_sum_all[c] += p;
 	 					if (i >= 5) {
-							pred_sum_all_but5(c) += p;
+							pred_sum_all_but5[c] += p;
 						}
 					}	
 
 					// Evaluate the training dataset and update the e-terms 
-					for (uint c = 0; c < train.num_cases; c++) {
+					for (unsigned c = 0; c < train.num_cases; c++) {
 						double p = cache[c].e;
 						p = std::min(max_target, p);
 						p = std::max(min_target, p);
@@ -130,19 +140,19 @@ class fm_learn_mcmc_simultaneous : public fm_learn_mcmc {
 
 				} else if (task == TASK_CLASSIFICATION) {
 					// evaluate test and store it
-					for (uint c = 0; c < test.num_cases; c++) {
+					for (unsigned c = 0; c < test.num_cases; c++) {
 						double p = cache_test[c].e;
 						p = cdf_gaussian(p);
-						pred_this(c) = p;
-						pred_sum_all(c) += p;
+						pred_this[c] = p;
+						pred_sum_all[c] += p;
 	 					if (i >= 5) {
-							pred_sum_all_but5(c) += p;
+							pred_sum_all_but5[c] += p;
 						}
 					}	
 
 					// Evaluate the training dataset and update the e-terms 
-					uint _acc_train = 0;
-					for (uint c = 0; c < train.num_cases; c++) {
+					unsigned _acc_train = 0;
+					for (unsigned c = 0; c < train.num_cases; c++) {
 						double p = cache[c].e;						
 						p = cdf_gaussian(p);
 						if (((p >= 0.5) && (train.target(c) > 0.0)) || ((p < 0.5) && (train.target(c) < 0.0))) {
@@ -249,12 +259,12 @@ class fm_learn_mcmc_simultaneous : public fm_learn_mcmc {
 			}
 		}
 
-		void _evaluate(DVector<double>& pred, DVector<DATA_FLOAT>& target, double normalizer, double& rmse, double& mae, uint from_case, uint to_case) {
+		void _evaluate(DVector<double>& pred, DVector<DATA_FLOAT>& target, double normalizer, double& rmse, double& mae, unsigned from_case, unsigned to_case) {
 			assert(pred.dim == target.dim);
 			double _rmse = 0;
 			double _mae = 0;
-			uint num_cases = 0;
-			for (uint c = std::max((uint) 0, from_case); c < std::min((uint)pred.dim, to_case); c++) {
+			unsigned num_cases = 0;
+			for (unsigned c = std::max((unsigned) 0, from_case); c < std::min((unsigned)pred.dim, to_case); c++) {
 				double p = pred(c) * normalizer;
 				p = std::min(max_target, p);
 				p = std::max(min_target, p);
@@ -269,11 +279,11 @@ class fm_learn_mcmc_simultaneous : public fm_learn_mcmc {
 	
 		}
 
-		void _evaluate_class(DVector<double>& pred, DVector<DATA_FLOAT>& target, double normalizer, double& accuracy, double& loglikelihood, uint from_case, uint to_case) {
+		void _evaluate_class(DVector<double>& pred, DVector<DATA_FLOAT>& target, double normalizer, double& accuracy, double& loglikelihood, unsigned from_case, unsigned to_case) {
 			double _loglikelihood = 0.0;
-			uint _accuracy = 0;
-			uint num_cases = 0;
-			for (uint c = std::max((uint) 0, from_case); c < std::min((uint)pred.dim, to_case); c++) {
+			unsigned _accuracy = 0;
+			unsigned num_cases = 0;
+			for (unsigned c = std::max((unsigned) 0, from_case); c < std::min((unsigned)pred.dim, to_case); c++) {
 				double p = pred(c) * normalizer;
 				if (((p >= 0.5) && (target(c) > 0.0)) || ((p < 0.5) && (target(c) < 0.0))) {
 					_accuracy++;
@@ -290,11 +300,11 @@ class fm_learn_mcmc_simultaneous : public fm_learn_mcmc {
 		}		
 
 
-		void _evaluate(DVector<double>& pred, DVector<DATA_FLOAT>& target, double normalizer, double& rmse, double& mae, uint& num_eval_cases) {
+		void _evaluate(DVector<double>& pred, DVector<DATA_FLOAT>& target, double normalizer, double& rmse, double& mae, unsigned& num_eval_cases) {
 			_evaluate(pred, target, normalizer, rmse, mae, 0, num_eval_cases);
 		}
 
-		void _evaluate_class(DVector<double>& pred, DVector<DATA_FLOAT>& target, double normalizer, double& accuracy, double& loglikelihood, uint& num_eval_cases) {
+		void _evaluate_class(DVector<double>& pred, DVector<DATA_FLOAT>& target, double normalizer, double& accuracy, double& loglikelihood, unsigned& num_eval_cases) {
 			_evaluate_class(pred, target, normalizer, accuracy, loglikelihood, 0, num_eval_cases);
 		}
 };
