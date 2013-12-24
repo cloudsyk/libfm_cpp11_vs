@@ -112,7 +112,7 @@ class fm_learn_mcmc : public fm_learn {
 			// (1.2) y^R_j = 1/2 sum_f q^R_jf^2
 			// Complexity: O(N_z(X^M) + \sum_{B} N_z(X^B) + n*|B| + \sum_B n^B) = O(\mathcal{C})
 			for (int f = 0; f < fm->num_factor; f++) {
-				double* v = fm->v.value[f];
+				double* v = &(fm->v.i_value[f*fm->num_attribute]);
 
 				// calculate cache[i].q = sum_i v_if x_i (== q_f-term)
 				// Complexity: O(N_z(X^M))
@@ -191,7 +191,7 @@ class fm_learn_mcmc : public fm_learn {
 
 			// (2) do -1/2 sum_f (sum_i v_if^2 x_i^2) and store it in the q-term
 			for (int f = 0; f < fm->num_factor; f++) {
-				double* v = fm->v.value[f];
+				double* v = &(fm->v.i_value[f*fm->num_attribute]);
 
 				// sum up the q^S_f terms in the main-q-cache: 0.5*sum_i (v_if x_i)^2 (== q^S_f-term)
 				// Complexity: O(N_z(X^M))
@@ -353,7 +353,7 @@ class fm_learn_mcmc : public fm_learn {
 		void add_main_q(Data& train, unsigned f) {
 			// add the q(f)-terms to the main relation q-cache (using only the transpose data)
 			
-			double* v = fm->v.value[f];
+			double* v = &(fm->v.i_value[f*fm->num_attribute]);
 
 
 			{
@@ -391,8 +391,8 @@ class fm_learn_mcmc : public fm_learn {
 			if (fm->k1) {
 				unsigned count_how_many_variables_are_drawn = 0; // to make sure that non-existing ones in the train set are not missed...
 			
-				draw_w_lambda(fm->w.value);
-				draw_w_mu(fm->w.value);
+				draw_w_lambda(fm->w.i_value);
+				draw_w_mu(fm->w.i_value);
 				if (log != NULL) {
 					for (unsigned g = 0; g < meta->num_attr_groups; g++) {
 						ss.str(""); ss << "wmu[" << g << "]"; log->log(ss.str(), w_mu[g]);
@@ -485,7 +485,7 @@ class fm_learn_mcmc : public fm_learn {
 
 				add_main_q(train, f);
 			
-				double* v = fm->v.value[f];
+				double* v = &(fm->v.i_value[f*fm->num_attribute]);
 				
 				for (unsigned r = 0; r < train.relation.dim; r++) {
 					RelationJoin& join = train.relation(r);
@@ -897,7 +897,7 @@ class fm_learn_mcmc : public fm_learn {
 			}
 		}
 
-		void draw_w_mu(double* w) {
+		void draw_w_mu(vector<double> &w) {
 			if (! do_multilevel) {
 				w_mu.init(mu_0);
 				return;
@@ -936,7 +936,7 @@ class fm_learn_mcmc : public fm_learn {
 			}
 		}
 
-		void draw_w_lambda(double* w) {
+		void draw_w_lambda(vector<double>& w) {
 			if (! do_multilevel) {
 				return;
 			}

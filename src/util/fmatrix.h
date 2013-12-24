@@ -121,7 +121,7 @@ template <typename T> class LargeSparseMatrixHD : public LargeSparseMatrix<T> {
 				}
 				if (number_of_valid_rows_in_cache >= data.dim) { break; }
 
-				sparse_row<T>& this_row = data.value[number_of_valid_rows_in_cache];
+				sparse_row<T>& this_row = data[number_of_valid_rows_in_cache];
 				
 				in.read(reinterpret_cast<char*>(&(this_row.size)), sizeof(unsigned));
 				if ((this_row.size + number_of_valid_entries_in_cache) > cache.dim) {
@@ -129,7 +129,7 @@ template <typename T> class LargeSparseMatrixHD : public LargeSparseMatrix<T> {
 					break;
 				}
 
-				this_row.data = &(cache.value[number_of_valid_entries_in_cache]);
+				this_row.data = &(cache[number_of_valid_entries_in_cache]);
 				in.read(reinterpret_cast<char*>(this_row.data), sizeof(sparse_entry<T>)*this_row.size);
 			
 				number_of_valid_rows_in_cache++;					

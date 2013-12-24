@@ -35,7 +35,7 @@ void fm_SGD(fm_model* fm, const double& learn_rate, sparse_row<DATA_FLOAT> &x, c
 	}	
 }
 		
-void fm_pairSGD(fm_model* fm, const double& learn_rate, sparse_row<DATA_FLOAT> &x_pos, sparse_row<DATA_FLOAT> &x_neg, const double multiplier, DVector<double> &sum_pos, DVector<double> &sum_neg, DVector<bool> &grad_visited, DVector<double> &grad) {
+void fm_pairSGD(fm_model* fm, const double& learn_rate, sparse_row<DATA_FLOAT> &x_pos, sparse_row<DATA_FLOAT> &x_neg, const double multiplier, DVector<double> &sum_pos, DVector<double> &sum_neg, DVector<int> &grad_visited, DVector<double> &grad) {
 	if (fm->k0) {
 		double& w0 = fm->w0;
 		w0 -= fm->reg0 * w0; // w0 should always be 0			

@@ -30,90 +30,49 @@ struct dmatrix_file_header {
 
 template <typename T> class DMatrix {
 	public:
-		T** value;
-
+        vector<T> i_value;
 		std::vector<std::string> col_names;
 		unsigned dim1, dim2;
 		
 		T get(unsigned x, unsigned y) {
    			//assert((x < dim1) && (y < dim2));
-			return value[x][y];
+			return i_value[x*dim2 + y];	
 		}
 
 		DMatrix(unsigned p_dim1, unsigned p_dim2) {
 			dim1 = 0;
 			dim2 = 0;	
-			value = NULL;
 			setSize(p_dim1, p_dim2);
 		}
 		
 		DMatrix() {
 			dim1 = 0;
 			dim2 = 0;	
-			value = NULL;
 		}
 		
 		~DMatrix() {
-			if (value != NULL) {
-				MemoryLog::getInstance().logFree("dmatrix", sizeof(T*), dim1);
-				delete [] value[0];
-				MemoryLog::getInstance().logFree("dmatrix", sizeof(T), dim1*dim2);
-				delete [] value;
-			}	
 		}
 		
-		void assign(DMatrix<T>& v) {
-			if ((v.dim1 != dim1) || (v.dim2 != dim2)) { setSize(v.dim1, v.dim2); }
-   			for (unsigned i = 0; i < dim1; i++) {
-	   			for (unsigned j = 0; j < dim2; j++) {
-   					value[i][j] = v.value[i][j];
-				}
-   			}
-   		}
-		void init(T v) {
-   			for (unsigned i = 0; i < dim1; i++) {
-   				for (unsigned i2 = 0; i2 < dim2; i2++) {
-   					value[i][i2] = v;
-				}
-   			}	
+		void init(const T& v) {
+            i_value.assign(dim1*dim2, v);
    		}
 		void setSize(unsigned p_dim1, unsigned p_dim2) {
 			if ((p_dim1 == dim1) && (p_dim2 == dim2)) {
 				return;
 			}
-			if (value != NULL) {
-				MemoryLog::getInstance().logFree("dmatrix", sizeof(T*), dim1);
-				delete [] value[0];
-				MemoryLog::getInstance().logFree("dmatrix", sizeof(T), dim1*dim2);
-				delete [] value;
-			}
 			dim1 = p_dim1;
 			dim2 = p_dim2;
-			MemoryLog::getInstance().logNew("dmatrix", sizeof(T*), dim1);
-			value = new T*[dim1];
-			MemoryLog::getInstance().logNew("dmatrix", sizeof(T), dim1*dim2);	
-			value[0] = new T[dim1 * dim2];
-			for (unsigned i = 1; i < dim1; i++) {
-				value[i] = value[0] + i * dim2;
-			}			
-			col_names.resize(dim2);
-			for (unsigned i = 1; i < dim2; i++) {
-				col_names[i] = "";
-			}						
+            i_value.reserve(dim1*dim2);
+			col_names.assign(dim2, "");					
 		}
 
 		T& operator() (unsigned x, unsigned y) {
    		//	assert((x < dim1) && (y < dim2));
-			return value[x][y];	
+			return i_value[x*dim2 + y];	
 		}
    		T operator() (unsigned x, unsigned y) const {
    		//	assert((x < dim1) && (y < dim2));
-   			return value[x][y];
-   		}
-   		
-   		T* operator() (unsigned x) const {
-   		//	assert((x < dim1));
-   			return value[x];
+   			return i_value[x*dim2 + y];	
    		}
    		
    		void save(std::string filename, bool has_header = false) {
@@ -189,7 +148,7 @@ template <typename T> class DMatrix {
 				for (unsigned i_2 = 0; i_2 < dim2; i_2++) {
 					T v;
 					in_file >> v;
-					value[i_1][i_2] = v;
+					i_value[i_1*dim2 + i_2] = v;
 				}
 			}
 			in_file.close();
@@ -201,67 +160,41 @@ template <typename T> class DVector {
 	public:
 		unsigned dim;
         vector<T> i_value;
-		T* value;
 		DVector() {
 			dim = 0;
-			value = NULL;
 		}
 		DVector(unsigned p_dim) {
 			dim = 0;
-			value = NULL;
 			setSize(p_dim);
 		}
 		~DVector() {
-			if (value != NULL) {
-				MemoryLog::getInstance().logFree("dvector", sizeof(T), dim);
-				delete [] value;
-			}	
+				vector<T> tmp_vec_2_swap;
+                i_value.swap(tmp_vec_2_swap);
 		}
 		T get(unsigned x) {
-			return value[x];
+			return i_value[x];
 		}
 		void setSize(unsigned p_dim) {
-			if (p_dim == dim) { return; }
-			if (value != NULL) {
-				MemoryLog::getInstance().logFree("dvector", sizeof(T), dim);
-				delete [] value;
-			}
-			dim = p_dim;
-			MemoryLog::getInstance().logNew("dvector", sizeof(T), dim);
-            i_value.reserve(p_dim);
-			value = new T[dim];			
+            dim = p_dim;
+            i_value.reserve(p_dim);		
 		}
 		T& operator[] (unsigned x) {
-			return value[x];	
+            return i_value[x];
 		}
 
         T operator() (unsigned x) const {
-            return value[x];
+            return i_value[x];	
         }
 
-   		void init(T v) {
-   			for (unsigned i = 0; i < dim; i++) {
-   				value[i] = v;
-   			}
+   		void init(const T &v) {
             i_value.assign(dim, v);
    		}
-        void assign(T* v) {
-            if (v->dim != dim) { setSize(v->dim); }
-            for (unsigned i = 0; i < dim; i++) {
-                value[i] = v[i];
-            }
-        }
-        void assign(DVector<T>& v) {
-            if (v.dim != dim) { setSize(v.dim); }
-            for (unsigned i = 0; i < dim; i++) {
-                value[i] = v.value[i];
-            }
-        }
+
    		void save(std::string filename) {
 		   	std::ofstream out_file (filename.c_str());
 			if (out_file.is_open())	{
-				for (unsigned i = 0; i < dim; i++) {
-					out_file << value[i] << std::endl;
+				for (auto itr: i_value) {
+					out_file << itr << std::endl;
 				}
 				out_file.close();
 			} else {
@@ -294,7 +227,7 @@ template <typename T> class DVector {
 			for (unsigned i = 0; i < dim; i++) {
 				T v;
 				in_file >> v;
-				value[i] = v;
+				i_value[i] = v;
 			}
 			in_file.close();
 		}
@@ -311,9 +244,11 @@ template <typename T> class DVector {
 				in.read(reinterpret_cast<char*>(&num_rows), sizeof(num_rows));
 				assert(file_version == DVECTOR_EXPECTED_FILE_ID);
 				assert(data_size == sizeof(T));
-				setSize(num_rows);
+				T* value = new T(num_rows);
 				in.read(reinterpret_cast<char*>(value), sizeof(T)*dim);
 				in.close();
+                i_value.assign(value, value + num_rows);
+                delete[] value;
 			} else {
 				std::cout << "Unable to open file " << filename;
 			}   			
@@ -325,7 +260,7 @@ class DVectorDouble : public DVector<double> {
 	public:
 		void init_normal(double mean, double stdev) {	
 			for (unsigned i_2 = 0; i_2 < dim; i_2++) {
-				value[i_2] = ran_gaussian(mean, stdev);
+				i_value[i_2] = ran_gaussian(mean, stdev);
 			}
 		}
 };
@@ -335,13 +270,13 @@ class DMatrixDouble : public DMatrix<double> {
 		void init(double mean, double stdev) {	
 			for (unsigned i_1 = 0; i_1 < dim1; i_1++) {
 				for (unsigned i_2 = 0; i_2 < dim2; i_2++) {
-					value[i_1][i_2] = ran_gaussian(mean, stdev);
+					i_value[i_1*dim2 + i_2] = ran_gaussian(mean, stdev);
 				}
 			}
 		}
 		void init_column(double mean, double stdev, int column) {	
 			for (unsigned i_1 = 0; i_1 < dim1; i_1++) {
-				value[i_1][column] = ran_gaussian(mean, stdev);
+				i_value[i_1*dim2 + column] = ran_gaussian(mean, stdev);
 			}
 		}
 };

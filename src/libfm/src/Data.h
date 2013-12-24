@@ -236,9 +236,9 @@ void Data::load(std::string filename) {
 			if (sscanf(pline, "%f%n", &_value, &nchar) >=1) {
 				pline += nchar;
 				assert(row_id < num_rows);
-				target.value[row_id] = _value;
-				data.value[row_id].data = &(cache[cache_id]);
-				data.value[row_id].size = 0;
+				target[row_id] = _value;
+				data[row_id].data = &(cache[cache_id]);
+				data[row_id].size = 0;
 			
 				while (sscanf(pline, "%d:%f%n", &_feature, &_value, &nchar) >= 2) {
 					pline += nchar;	
@@ -246,7 +246,7 @@ void Data::load(std::string filename) {
 					cache[cache_id].id = _feature;
 					cache[cache_id].value = _value;
 					cache_id++;
-					data.value[row_id].size++;
+					data[row_id].size++;
 				}
 				row_id++;
 
@@ -301,7 +301,7 @@ void Data::create_data_t() {
 	sparse_entry<DATA_FLOAT>* cache = new sparse_entry<DATA_FLOAT>[num_values];
 	long long cache_id = 0;
 	for (unsigned i = 0; i < data_t.dim; i++) {
-		data_t.value[i].data = &(cache[cache_id]);
+		data_t[i].data = &(cache[cache_id]);
 		data_t[i].size = num_values_per_column(i);
 		cache_id += num_values_per_column(i);				
 	} 
