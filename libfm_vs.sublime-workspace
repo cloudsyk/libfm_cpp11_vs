@@ -1,0 +1,246 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"reg",
+				"regv"
+			],
+			[
+				"ini",
+				"init_stdev"
+			],
+			[
+				"bs",
+				"bstarr"
+			],
+			[
+				"prin",
+				"print_bst_array"
+			],
+			[
+				"a",
+				"array"
+			],
+			[
+				"in",
+				"in_num"
+			],
+			[
+				"x",
+				"xSort	(global, instance)"
+			],
+			[
+				"py",
+				"pyplot  (module)"
+			],
+			[
+				"load",
+				"loadDataSet(fileName)	(global, function)"
+			],
+			[
+				"lwlr",
+				"lwlrTest(testArr, xArr, yArr, k)	(global, function)"
+			],
+			[
+				"s",
+				"svmMLiA"
+			],
+			[
+				"te",
+				"testC"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 392.0,
+		"selected_items":
+		[
+			[
+				"in",
+				"Package Control: Install Package"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"ins",
+				"Package Control: Install Package"
+			],
+			[
+				"INSTALL",
+				"Package Control: Install Package"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 467.0
+	},
+	"console":
+	{
+		"height": 139.0,
+		"history":
+		[
+			"import urllib.request,os; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); open(os.path.join(ipp, pf), 'wb').write(urllib.request.urlopen( 'http://sublime.wbond.net/' + pf.replace(' ','%20')).read())"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/Users/apple/Desktop/libfm-1.40.src/src/fm_core/fm_data.h",
+		"/Users/apple/Desktop/libfm-1.40.src/src/util/cmdline.h",
+		"/Volumes/Data/machinelearninginaction/Ch05/logRegres.py",
+		"/Volumes/Data/Download/spark-0.8.0-incubating-bin-hadoop1/README.md",
+		"/Volumes/Data/Download/spark-0.8.0-incubating-bin-hadoop1/python/examples/kmeans.py",
+		"/Volumes/Data/Download/spark-0.8.0-incubating-bin-hadoop1/examples/src/main/java/org/apache/spark/examples/JavaWordCount.java",
+		"/Volumes/Data/poj/2299.cpp",
+		"/Users/apple/Desktop/machinelearninginaction/Ch06/svmMLiA.py",
+		"/Users/apple/Desktop/machinelearninginaction/Ch09/regTrees.py",
+		"/Users/apple/Desktop/machinelearninginaction/Ch08/regression.py",
+		"/Users/apple/Library/Application Support/Sublime Text 3/Packages/SideBarEnhancements/CHANGELOG",
+		"/Users/apple/Desktop/machinelearninginaction/Ch06/test.py",
+		"/Volumes/Data/machinelearninginaction/Ch04/bayes.py"
+	],
+	"find":
+	{
+		"height": 25.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"std::"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			""
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 25.0
+	},
+	"input":
+	{
+		"height": 33.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 141.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"project": "libfm_vs.sublime-project",
+	"replace":
+	{
+		"height": 46.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

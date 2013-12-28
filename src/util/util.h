@@ -23,14 +23,14 @@
 #include <iostream>
 #include <fstream>
 
-//#ifdef _WIN32
+#ifdef _WIN32
 namespace std {
 	bool isnan(double d) { return _isnan(d); }
 	bool isnan(float f) { return  _isnan(f); }
 	bool isinf(double d) { return (! _finite(d)) && (! isnan(d)); }
 	bool isinf(float f) { return (! _finite(f)) && (! isnan(f)); }
 }
-//#endif
+#endif
 
 double sqr(double d) { return d*d; }
 
